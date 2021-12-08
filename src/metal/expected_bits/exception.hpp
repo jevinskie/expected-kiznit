@@ -46,6 +46,7 @@ namespace mtl {
 
     template <class E> class bad_expected_access;
 
+    // �.�.7 Class bad_expected_access<void> [expected.bad_expected_access_base]
     template <> class bad_expected_access<void> : public std::exception {
     public:
         explicit bad_expected_access() {}
@@ -54,6 +55,7 @@ namespace mtl {
         }
     };
 
+    // �.�.6 Template Class bad_expected_access [expected.bad_expected_access]
     template <class E>
     class bad_expected_access : public bad_expected_access<void> {
     public:

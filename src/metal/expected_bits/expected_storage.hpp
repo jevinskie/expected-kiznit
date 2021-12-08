@@ -31,639 +31,839 @@
 #include <metal/expected_bits/unexpected.hpp>
 
 namespace mtl {
-
-    template <typename T, typename E> class expected;
-
-    struct unexpect_t {};
-    inline constexpr unexpect_t unexpect;
-
     namespace detail {
-        template <typename T, typename E> class expected_storage {
-        public:
-            constexpr expected_storage() : expected_storage(std::in_place) {}
 
-            constexpr expected_storage(const expected_storage& other)
-                : _has_value(other._has_value) {
-                if (_has_value)
-                    new (std::addressof(_value)) T(other._value);
-                else
-                    new (std::addressof(_error))
-                        unexpected<E>(other._error.value());
-            }
+        template <typename T, typename E,
+                  bool = std::is_trivially_destructible_v<T>,
+                  bool = std::is_trivially_destructible_v<E>>
+        struct expected_storage_base {
 
-            constexpr expected_storage(expected_storage&& other)
-                : _has_value(other._has_value) {
-                if (_has_value)
-                    new (std::addressof(_value)) T(std::move(other._value));
-                else
-                    new (std::addressof(_error))
-                        unexpected<E>(std::move(other._error.value()));
-            }
+            constexpr expected_storage_base() {}
 
-            template <typename U, typename G>
-            constexpr expected_storage(const expected<U, G>& other)
-                : _has_value(other.has_value()) {
-                if (_has_value)
-                    new (std::addressof(_value)) T(*other);
-                else
-                    new (std::addressof(_error)) unexpected<E>(other.error());
-            }
-
-            template <typename U, typename G>
-            constexpr expected_storage(expected<U, G>&& other)
-                : _has_value(other.has_value()) {
-                if (_has_value)
-                    new (std::addressof(_value)) T(std::move(*other));
-                else
-                    new (std::addressof(_error))
-                        unexpected<E>(std::move(other.error()));
-            }
-
-            template <typename... Args>
-            constexpr expected_storage(std::in_place_t, Args&&... args)
-                : _has_value(true), _value(std::forward<Args>(args)...) {}
-
-            template <class U, typename... Args>
-            constexpr expected_storage(std::in_place_t,
-                                       std::initializer_list<U> list,
-                                       Args&&... args)
-                : _has_value(true), _value(list, std::forward<Args>(args)...) {}
-
-            template <typename... Args>
-            constexpr expected_storage(unexpect_t, Args&&... args)
-                : _has_value(false), _error(std::forward<Args>(args)...) {}
-
-            expected_storage& operator=(const expected_storage& other) {
-                if (_has_value == other._has_value) {
-                    if (_has_value) {
-                        _value = other._value;
-                    } else {
-                        _error = other._error;
-                    }
-                } else if (_has_value) {
-                    assign_error_to_value(other);
-                } else {
-                    assign_value_to_error(other);
-                }
-                return *this;
-            }
-
-            expected_storage& operator=(expected_storage&& other) {
-                if (_has_value == other._has_value) {
-                    if (_has_value) {
-                        _value = std::move(other._value);
-                    } else {
-                        _error = std::move(other._error);
-                    }
-                } else if (_has_value) {
-                    move_error_to_value(std::move(other));
-                } else {
-                    move_value_to_error(std::move(other));
-                }
-                return *this;
-            }
-
-#if MTL_EXCEPTIONS
-            template <typename U> expected_storage& operator=(U&& other) {
-                if (_has_value) {
-                    _value = std::forward<U>(other);
-                } else if (std::is_nothrow_constructible_v<T, U>) {
-                    _error.~unexpected<E>();
-                    new (std::addressof(_value)) T(std::forward<U>(other));
-                    _has_value = true;
-                } else {
-                    unexpected<E> temp(std::move(_error));
-                    _error.~unexpected<E>();
-                    try {
-                        new (std::addressof(_value)) T(std::forward<U>(other));
-                        _has_value = true;
-                    } catch (...) {
-                        new (std::addressof(_error))
-                            unexpected<E>(std::move(temp));
-                        throw;
-                    }
-                }
-                return *this;
-            }
-#else
-            template <typename U> expected_storage& operator=(U&& other) {
-                if (_has_value) {
-                    _value = std::forward<U>(other);
-                } else {
-                    _error.~unexpected<E>();
-                    new (std::addressof(_value)) T(std::forward<U>(other));
-                    _has_value = true;
-                }
-                return *this;
-            }
-#endif
-
-            // P0323R10 has multiple errors for this operator, so we do what we
-            // think is right
-            template <typename G = E>
-            expected_storage& operator=(const unexpected<G>& error) {
+            constexpr ~expected_storage_base() {
                 if (_has_value) {
                     _value.~T();
-                    new (std::addressof(_error)) unexpected(error.value());
-                    _has_value = false;
-                } else {
-                    _error = unexpected(error.value());
-                }
-                return *this;
-            }
-
-            template <typename G = E>
-            expected_storage& operator=(unexpected<G>&& error) {
-                if (_has_value) {
-                    _value.~T();
-                    new (std::addressof(_error))
-                        unexpected(std::move(error.value()));
-                    _has_value = false;
-                } else {
-                    _error = unexpected(std::move(error.value()));
-                }
-                return *this;
-            }
-
-            ~expected_storage() {
-                if (_has_value)
-                    _value.~T();
-                else
-                    _error.~unexpected<E>();
-            }
-
-#if MTL_EXCEPTIONS
-            template <typename U = T,
-                      std::enable_if_t<
-                          std::is_nothrow_copy_constructible_v<U>>* = nullptr>
-            void assign_value_to_error(const expected_storage& other) noexcept {
-                _error.~unexpected<E>();
-                new (std::addressof(_value)) T(other._value);
-                _has_value = true;
-            }
-
-            template <typename U = T,
-                      std::enable_if_t<
-                          !std::is_nothrow_copy_constructible_v<U> &&
-                          std::is_nothrow_move_constructible_v<U>>* = nullptr>
-            void assign_value_to_error(const expected_storage& other) noexcept {
-                T temp(other._value);
-                _error.~unexpected<E>();
-                new (std::addressof(_value)) T(std::move(other._value));
-                _has_value = true;
-            }
-
-            template <typename U = T,
-                      std::enable_if_t<
-                          !std::is_nothrow_copy_constructible_v<U> &&
-                          !std::is_nothrow_move_constructible_v<U> &&
-                          std::is_nothrow_move_constructible_v<E>>* = nullptr>
-            void assign_value_to_error(const expected_storage& other) {
-                unexpected<E> temp(std::move(_error));
-                _error.~unexpected<E>();
-                try {
-                    new (std::addressof(_value)) T(other._value);
-                    _has_value = true;
-                } catch (...) {
-                    new (std::addressof(_error)) unexpected<E>(std::move(temp));
-                    throw;
-                }
-            }
-#else
-            void assign_value_to_error(const expected_storage& other) noexcept {
-                _error.~unexpected<E>();
-                new (std::addressof(_value)) T(other._value);
-                _has_value = true;
-            }
-#endif
-
-#if MTL_EXCEPTIONS
-            template <typename G = E,
-                      std::enable_if_t<
-                          std::is_nothrow_copy_constructible_v<G>>* = nullptr>
-            void assign_error_to_value(const expected_storage& other) noexcept {
-                _value.~T();
-                new (std::addressof(_error)) unexpected<E>(other._error);
-                _has_value = false;
-            }
-
-            template <typename G = E,
-                      std::enable_if_t<
-                          !std::is_nothrow_copy_constructible_v<G> &&
-                          std::is_nothrow_move_constructible_v<G>>* = nullptr>
-            void assign_error_to_value(const expected_storage& other) noexcept {
-                unexpected<E> temp(other._error);
-                _value.~T();
-                new (std::addressof(_error))
-                    unexpected<E>(std::move(other._error));
-                _has_value = false;
-            }
-
-            template <typename G = E,
-                      std::enable_if_t<
-                          !std::is_nothrow_copy_constructible_v<G> &&
-                          !std::is_nothrow_move_constructible_v<G> &&
-                          std::is_nothrow_move_constructible_v<T>>* = nullptr>
-            void assign_error_to_value(const expected_storage& other) {
-                T temp(std::move(_value));
-                _value.~T();
-                try {
-                    new (std::addressof(_error)) unexpected<E>(other._error);
-                    _has_value = false;
-                } catch (...) {
-                    new (std::addressof(_value)) T(std::move(temp));
-                    throw;
-                }
-            }
-#else
-            void assign_error_to_value(const expected_storage& other) noexcept {
-                _value.~T();
-                new (std::addressof(_error)) unexpected<E>(other._error);
-                _has_value = false;
-            }
-#endif
-
-#if MTL_EXCEPTIONS
-            template <typename U = T,
-                      std::enable_if_t<
-                          std::is_nothrow_move_constructible_v<U>>* = nullptr>
-            void move_value_to_error(expected_storage&& other) noexcept {
-                _error.~unexpected<E>();
-                new (std::addressof(_value)) T(std::move(other._value));
-                _has_value = true;
-            }
-
-            template <typename U = T,
-                      std::enable_if_t<
-                          !std::is_nothrow_move_constructible_v<U>>* = nullptr>
-            void move_value_to_error(expected_storage&& other) {
-                unexpected<E> temp(std::move(_error));
-                _error.~unexpected<E>();
-                try {
-                    new (std::addressof(_value)) T(std::move(other._value));
-                    _has_value = true;
-                } catch (...) {
-                    new (std::addressof(_error)) unexpected<E>(std::move(temp));
-                    throw;
-                }
-            }
-#else
-            void move_value_to_error(expected_storage&& other) noexcept {
-                _error.~unexpected<E>();
-                new (std::addressof(_value)) T(std::move(other._value));
-                _has_value = true;
-            }
-#endif
-
-#if MTL_EXCEPTIONS
-            template <typename G = E,
-                      std::enable_if_t<
-                          std::is_nothrow_move_constructible_v<G>>* = nullptr>
-            void move_error_to_value(expected_storage&& other) noexcept {
-                _value.~T();
-                new (std::addressof(_error))
-                    unexpected<E>(std::move(other._error));
-                _has_value = false;
-            }
-
-            template <typename G = E,
-                      std::enable_if_t<
-                          !std::is_nothrow_move_constructible_v<G>>* = nullptr>
-            void move_error_to_value(expected_storage&& other) {
-                T temp(std::move(_value));
-                _value.~T();
-                try {
-                    new (std::addressof(_error))
-                        unexpected<E>(std::move(other._error));
-                    _has_value = false;
-                } catch (...) {
-                    new (std::addressof(_value)) T(std::move(temp));
-                    throw;
-                }
-            }
-#else
-            void move_error_to_value(expected_storage&& other) noexcept {
-                _value.~T();
-                new (std::addressof(_error))
-                    unexpected<E>(std::move(other._error));
-                _has_value = false;
-            }
-#endif
-
-#if MTL_EXCEPTIONS
-            template <typename... Args> T& emplace(Args&&... args) {
-                if (_has_value) {
-                    _value = T(std::forward<Args>(args)...);
-                } else if (std::is_nothrow_constructible_v<T, Args...>) {
-                    _error.~unexpected<E>();
-                    new (std::addressof(_value)) T(std::forward<Args>(args)...);
-                    _has_value = true;
-                } else if (std::is_nothrow_move_constructible_v<T>) {
-                    T temp(std::forward<Args>(args)...);
-                    _error.~unexpected<E>();
-                    new (std::addressof(_value)) T(std::move(temp));
-                    _has_value = true;
-                } else {
-                    unexpected<E> temp(std::move(_error));
-                    _error.~unexpected<E>();
-                    try {
-                        new (std::addressof(_value))
-                            T(std::forward<Args>(args)...);
-                        _has_value = true;
-                    } catch (...) {
-                        new (std::addressof(_error))
-                            unexpected<E>(std::move(temp));
-                        throw;
-                    }
-                }
-                return _value;
-            }
-
-            template <typename U, typename... Args>
-            T& emplace(std::initializer_list<U> list, Args&&... args) {
-                if (_has_value) {
-                    _value = T(list, std::forward<Args>(args)...);
-                } else if (std::is_nothrow_constructible_v<
-                               T, std::initializer_list<U>&, Args...>) {
-                    _error.~unexpected<E>();
-                    new (std::addressof(_value))
-                        T(list, std::forward<Args>(args)...);
-                    _has_value = true;
-                } else if (std::is_nothrow_move_constructible_v<T>) {
-                    T temp(list, std::forward<Args>(args)...);
-                    _error.~unexpected<E>();
-                    new (std::addressof(_value)) T(std::move(temp));
-                    _has_value = true;
-                } else {
-                    unexpected<E> temp(std::move(_error));
-                    _error.~unexpected<E>();
-                    try {
-                        new (std::addressof(_value))
-                            T(list, std::forward<Args>(args)...);
-                        _has_value = true;
-                    } catch (...) {
-                        new (std::addressof(_error))
-                            unexpected<E>(std::move(temp));
-                        throw;
-                    }
-                }
-                return _value;
-            }
-#else
-            template <typename... Args> T& emplace(Args&&... args) {
-                if (_has_value) {
-                    _value = T(std::forward<Args>(args)...);
-                } else if (std::is_nothrow_constructible_v<T, Args...>) {
-                    _error.~unexpected<E>();
-                    new (std::addressof(_value)) T(std::forward<Args>(args)...);
-                    _has_value = true;
-                } else if (std::is_nothrow_move_constructible_v<T>) {
-                    T temp(std::forward<Args>(args)...);
-                    _error.~unexpected<E>();
-                    new (std::addressof(_value)) T(std::move(temp));
-                    _has_value = true;
                 } else {
                     _error.~unexpected<E>();
-                    new (std::addressof(_value)) T(std::forward<Args>(args)...);
-                    _has_value = true;
                 }
-                return _value;
             }
 
-            template <typename U, typename... Args>
-            T& emplace(std::initializer_list<U> list, Args&&... args) {
-                if (_has_value) {
-                    _value = T(list, std::forward<Args>(args)...);
-                } else if (std::is_nothrow_constructible_v<
-                               T, std::initializer_list<U>&, Args...>) {
-                    _error.~unexpected<E>();
-                    new (std::addressof(_value))
-                        T(list, std::forward<Args>(args)...);
-                    _has_value = true;
-                } else if (std::is_nothrow_move_constructible_v<T>) {
-                    T temp(list, std::forward<Args>(args)...);
-                    _error.~unexpected<E>();
-                    new (std::addressof(_value)) T(std::move(temp));
-                    _has_value = true;
-                } else {
-                    _error.~unexpected<E>();
-                    new (std::addressof(_value))
-                        T(list, std::forward<Args>(args)...);
-                    _has_value = true;
-                }
-                return _value;
-            }
-#endif
-
-#if MTL_EXCEPTIONS
-            void swap(expected_storage& other) {
-                if (_has_value) {
-                    if (other._has_value) {
-                        using std::swap;
-                        swap(_value, other._value);
-                    } else {
-                        if (std::is_nothrow_move_constructible_v<E>) {
-                            unexpected<E> temp(std::move(other._error));
-                            _error.~unexpected<E>();
-                            new (std::addressof(other._value))
-                                T(std::move(_value));
-                            _value.~T();
-                            new (std::addressof(_error))
-                                unexpected<E>(std::move(temp));
-                            _has_value = false;
-                            other._has_value = true;
-                        } else {
-                            T temp(std::move(_value));
-                            _value.~T();
-                            new (std::addressof(_error))
-                                unexpected<E>(std::move(other._error));
-                            other._error.~unexpected<E>();
-                            new (std::addressof(other._value))
-                                T(std::move(temp));
-                            _has_value = false;
-                            other._has_value = true;
-                        }
-                    }
-                } else {
-                    if (other._has_value) {
-                        other.swap(*this);
-                    } else {
-                        using std::swap;
-                        swap(_error, other._error);
-                    }
-                }
-            }
-#else
-            void swap(expected_storage& other) {
-                if (_has_value) {
-                    if (other._has_value) {
-                        using std::swap;
-                        swap(_value, other._value);
-                    } else {
-                        if (std::is_nothrow_move_constructible_v<E>) {
-                            unexpected<E> temp(std::move(other._error));
-                            _error.~unexpected<E>();
-                            new (std::addressof(other._value))
-                                T(std::move(_value));
-                            _value.~T();
-                            new (std::addressof(_error))
-                                unexpected<E>(std::move(temp));
-                            _has_value = false;
-                            other._has_value = true;
-                        } else {
-                            T temp(std::move(_value));
-                            _value.~T();
-                            new (std::addressof(_error))
-                                unexpected<E>(std::move(other._error));
-                            other._error.~unexpected<E>();
-                            new (std::addressof(other._value))
-                                T(std::move(temp));
-                            _has_value = false;
-                            other._has_value = true;
-                        }
-                    }
-                } else {
-                    if (other._has_value) {
-                        other.swap(*this);
-                    } else {
-                        using std::swap;
-                        swap(_error, other._error);
-                    }
-                }
-            }
-#endif
-
-            bool _has_value;
             union {
                 T _value;
                 unexpected<E> _error;
             };
+            bool _has_value;
         };
 
-        template <typename E> class expected_storage<void, E> {
-        public:
-            constexpr expected_storage() : _has_value(true) {}
+        template <typename T, typename E>
+        struct expected_storage_base<T, E, true, false> {
 
-            constexpr expected_storage(const expected_storage& other)
-                : _has_value(other._has_value) {
-                if (!_has_value)
-                    new (std::addressof(_error))
-                        unexpected<E>(other._error.value());
-            }
+            constexpr expected_storage_base() {}
 
-            constexpr expected_storage(expected_storage&& other)
-                : _has_value(other._has_value) {
-                if (!_has_value)
-                    new (std::addressof(_error))
-                        unexpected<E>(std::move(other._error.value()));
-            }
-
-            template <typename G>
-            constexpr expected_storage(const expected<void, G>& other)
-                : _has_value(other.has_value()) {
-                if (!_has_value)
-                    new (std::addressof(_error)) unexpected<E>(other.error());
-            }
-
-            template <typename G>
-            constexpr expected_storage(expected<void, G>&& other)
-                : _has_value(other.has_value()) {
-                if (!_has_value)
-                    new (std::addressof(_error))
-                        unexpected<E>(std::move(other.error()));
-            }
-
-            constexpr expected_storage(std::in_place_t) : _has_value(true) {}
-
-            template <typename... Args>
-            constexpr expected_storage(unexpect_t, Args&&... args) noexcept {
-                new (std::addressof(_error))
-                    unexpected<E>(std::forward<Args>(args)...);
-                _has_value = false;
-            }
-
-            expected_storage& operator=(const expected_storage& other) {
-                if (_has_value == other._has_value) {
-                    if (!_has_value) {
-                        _error = other._error;
-                    }
-                } else if (_has_value) {
-                    new (std::addressof(_error)) unexpected<E>(other._error);
-                    _has_value = false;
-                } else {
+            constexpr ~expected_storage_base() {
+                if (!_has_value) {
                     _error.~unexpected<E>();
-                    _has_value = true;
-                }
-                return *this;
-            }
-
-            expected_storage& operator=(expected_storage&& other) {
-                if (_has_value == other._has_value) {
-                    if (!_has_value) {
-                        _error = std::move(other._error);
-                    }
-                } else if (_has_value) {
-                    new (std::addressof(_error))
-                        unexpected<E>(std::move(other._error));
-                    _has_value = false;
-                } else {
-                    _error.~unexpected<E>();
-                    _has_value = true;
-                }
-                return *this;
-            }
-
-            // P0323R10 has multiple errors for this operator, so we do what
-            // we think is right
-            template <typename G = E>
-            expected_storage& operator=(const unexpected<G>& error) {
-                if (_has_value) {
-                    new (std::addressof(_error)) unexpected(error.value());
-                    _has_value = false;
-                } else {
-                    _error = unexpected(error.value());
-                }
-                return *this;
-            }
-
-            template <typename G = E>
-            expected_storage& operator=(unexpected<G>&& error) {
-                if (_has_value) {
-                    new (std::addressof(_error))
-                        unexpected(std::move(error.value()));
-                    _has_value = false;
-                } else {
-                    _error = unexpected(std::move(error.value()));
-                }
-                return *this;
-            }
-
-            ~expected_storage() {
-                if (!_has_value)
-                    _error.~unexpected<E>();
-            }
-
-            void swap(expected_storage& other) {
-                if (_has_value && !other._has_value) {
-                    new (std::addressof(_error))
-                        unexpected(std::move(other._error));
-                    _has_value = false;
-                    other._error.~unexpected<E>();
-                    other._has_value = true;
-                } else if (!_has_value) {
-                    if (other._has_value) {
-                        other.swap(*this);
-                    } else {
-                        using std::swap;
-                        std::swap(_error, other._error);
-                    }
                 }
             }
 
+            union {
+                T _value;
+                unexpected<E> _error;
+            };
             bool _has_value;
+        };
+
+        template <typename T, typename E>
+        struct expected_storage_base<T, E, false, true> {
+
+            constexpr expected_storage_base() {}
+
+            constexpr ~expected_storage_base() {
+                if (_has_value) {
+                    _value.~T();
+                }
+            }
+
+            union {
+                T _value;
+                unexpected<E> _error;
+            };
+            bool _has_value;
+        };
+
+        template <typename T, typename E>
+        struct expected_storage_base<T, E, true, true> {
+
+            constexpr expected_storage_base() {}
+
+            constexpr ~expected_storage_base() = default;
+
+            union {
+                T _value;
+                unexpected<E> _error;
+            };
+            bool _has_value;
+        };
+
+        template <typename E>
+        struct expected_storage_base<void, E, false, false> {
+
+            constexpr expected_storage_base() {}
+
+            constexpr ~expected_storage_base() {
+                if (!_has_value) {
+                    _error.~unexpected<E>();
+                }
+            }
+
             union {
                 unexpected<E> _error;
             };
+            bool _has_value;
         };
+
+        template <typename E>
+        struct expected_storage_base<void, E, false, true> {
+
+            constexpr expected_storage_base() {}
+
+            constexpr ~expected_storage_base() = default;
+
+            union {
+                unexpected<E> _error;
+            };
+            bool _has_value;
+        };
+
+        template <typename T, typename E>
+        struct expected_storage : expected_storage_base<T, E> {
+
+            constexpr void _construct_value() {
+                new (std::addressof(this->_value)) T();
+                this->_has_value = true;
+            }
+
+            constexpr void _construct_error() {
+                new (std::addressof(this->_error)) unexpected<E>();
+                this->_has_value = false;
+            }
+
+            // constexpr void _destroy_value() { this->_value.~T(); }
+
+            // constexpr void _destroy_error() { this->_error.~unexpected<E>();
+            // }
+        };
+
+        template <typename E>
+        struct expected_storage<void, E> : expected_storage_base<void, E> {
+
+            constexpr void _construct_value() { this->_has_value = true; }
+
+            constexpr void _construct_error() {
+                new (std::addressof(this->_error)) unexpected<E>();
+                this->_has_value = false;
+            }
+
+            // constexpr void _destroy_value() {}
+
+            // constexpr void _destroy_error() { this->_error.~unexpected<E>();
+            // }
+        };
+
+        // TODO: remove these by moving default constructor to
+        // expected_storage_base()?
+        template <typename E>
+        struct expected_storage<const void, E> : expected_storage<void, E> {};
+
+        template <typename E>
+        struct expected_storage<volatile void, E> : expected_storage<void, E> {
+        };
+
+        template <typename E>
+        struct expected_storage<const volatile void, E>
+            : expected_storage<void, E> {};
+
     } // namespace detail
+
+    //     namespace detail {
+    //         template <typename T, typename E> class expected_storage {
+    //         public:
+    //             constexpr expected_storage() :
+    //             expected_storage(std::in_place) {}
+
+    //             constexpr expected_storage(const expected_storage& other)
+    //                 : _has_value(other._has_value) {
+    //                 if (_has_value)
+    //                     new (std::addressof(_value)) T(other._value);
+    //                 else
+    //                     new (std::addressof(_error))
+    //                         unexpected<E>(other._error.value());
+    //             }
+
+    //             constexpr expected_storage(expected_storage&& other)
+    //                 : _has_value(other._has_value) {
+    //                 if (_has_value)
+    //                     new (std::addressof(_value))
+    //                     T(std::move(other._value));
+    //                 else
+    //                     new (std::addressof(_error))
+    //                         unexpected<E>(std::move(other._error.value()));
+    //             }
+
+    //             template <typename U, typename G>
+    //             constexpr expected_storage(const expected<U, G>& other)
+    //                 : _has_value(other.has_value()) {
+    //                 if (_has_value)
+    //                     new (std::addressof(_value)) T(*other);
+    //                 else
+    //                     new (std::addressof(_error))
+    //                     unexpected<E>(other.error());
+    //             }
+
+    //             template <typename U, typename G>
+    //             constexpr expected_storage(expected<U, G>&& other)
+    //                 : _has_value(other.has_value()) {
+    //                 if (_has_value)
+    //                     new (std::addressof(_value))
+    //                     T(std::move(*other));
+    //                 else
+    //                     new (std::addressof(_error))
+    //                         unexpected<E>(std::move(other.error()));
+    //             }
+
+    //             template <typename... Args>
+    //             constexpr expected_storage(in_place_t, Args&&... args)
+    //                 : _has_value(true),
+    //                 _value(std::forward<Args>(args)...)
+    //                 {}
+
+    //             template <class U, typename... Args>
+    //             constexpr expected_storage(in_place_t,
+    //             initializer_list<U> list,
+    //                                        Args&&... args)
+    //                 : _has_value(true), _value(list,
+    //                 std::forward<Args>(args)...) {}
+
+    //             template <typename... Args>
+    //             constexpr expected_storage(unexpect_t, Args&&... args)
+    //                 : _has_value(false),
+    //                 _error(std::forward<Args>(args)...)
+    //                 {}
+
+    //             expected_storage& operator=(const expected_storage&
+    //             other) {
+    //                 if (_has_value == other._has_value) {
+    //                     if (_has_value) {
+    //                         _value = other._value;
+    //                     } else {
+    //                         _error = other._error;
+    //                     }
+    //                 } else if (_has_value) {
+    //                     assign_error_to_value(other);
+    //                 } else {
+    //                     assign_value_to_error(other);
+    //                 }
+    //                 return *this;
+    //             }
+
+    //             expected_storage& operator=(expected_storage&& other) {
+    //                 if (_has_value == other._has_value) {
+    //                     if (_has_value) {
+    //                         _value = std::move(other._value);
+    //                     } else {
+    //                         _error = std::move(other._error);
+    //                     }
+    //                 } else if (_has_value) {
+    //                     move_error_to_value(std::move(other));
+    //                 } else {
+    //                     move_value_to_error(std::move(other));
+    //                 }
+    //                 return *this;
+    //             }
+
+    // #if MTL_EXCEPTIONS
+    //             template <typename U> expected_storage& operator=(U&&
+    //             other)
+    //             {
+    //                 if (_has_value) {
+    //                     _value = std::forward<U>(other);
+    //                 } else if (std::is_nothrow_constructible_v<T, U>) {
+    //                     _error.~unexpected<E>();
+    //                     new (std::addressof(_value))
+    //                     T(std::forward<U>(other)); _has_value = true;
+    //                 } else {
+    //                     unexpected<E> temp(std::move(_error));
+    //                     _error.~unexpected<E>();
+    //                     try {
+    //                         new (std::addressof(_value))
+    //                         T(std::forward<U>(other)); _has_value = true;
+    //                     } catch (...) {
+    //                         new (std::addressof(_error))
+    //                             unexpected<E>(std::move(temp));
+    //                         throw;
+    //                     }
+    //                 }
+    //                 return *this;
+    //             }
+    // #else
+    //             template <typename U> expected_storage& operator=(U&&
+    //             other)
+    //             {
+    //                 if (_has_value) {
+    //                     _value = std::forward<U>(other);
+    //                 } else {
+    //                     _error.~unexpected<E>();
+    //                     new (std::addressof(_value))
+    //                     T(std::forward<U>(other)); _has_value = true;
+    //                 }
+    //                 return *this;
+    //             }
+    // #endif
+
+    //             // P0323R10 has multiple errors for this operator, so we
+    //             do what we
+    //             // think is right
+    //             template <typename G = E>
+    //             expected_storage& operator=(const unexpected<G>& error) {
+    //                 if (_has_value) {
+    //                     _value.~T();
+    //                     new (std::addressof(_error))
+    //                     unexpected(error.value()); _has_value = false;
+    //                 } else {
+    //                     _error = unexpected(error.value());
+    //                 }
+    //                 return *this;
+    //             }
+
+    //             template <typename G = E>
+    //             expected_storage& operator=(unexpected<G>&& error) {
+    //                 if (_has_value) {
+    //                     _value.~T();
+    //                     new (std::addressof(_error))
+    //                         unexpected(std::move(error.value()));
+    //                     _has_value = false;
+    //                 } else {
+    //                     _error = unexpected(std::move(error.value()));
+    //                 }
+    //                 return *this;
+    //             }
+
+    //             ~expected_storage() {
+    //                 if (_has_value)
+    //                     _value.~T();
+    //                 else
+    //                     _error.~unexpected<E>();
+    //             }
+
+    // #if MTL_EXCEPTIONS
+    //             template <typename U = T,
+    //                       std::enable_if_t<
+    //                           std::is_nothrow_copy_constructible_v<U>>* =
+    //                           nullptr>
+    //             void assign_value_to_error(const expected_storage& other)
+    //             noexcept {
+    //                 _error.~unexpected<E>();
+    //                 new (std::addressof(_value)) T(other._value);
+    //                 _has_value = true;
+    //             }
+
+    //             template <typename U = T,
+    //                       std::enable_if_t<
+    //                           !std::is_nothrow_copy_constructible_v<U> &&
+    //                           std::is_nothrow_move_constructible_v<U>>* =
+    //                           nullptr>
+    //             void assign_value_to_error(const expected_storage& other)
+    //             noexcept {
+    //                 T temp(other._value);
+    //                 _error.~unexpected<E>();
+    //                 new (std::addressof(_value))
+    //                 T(std::move(other._value)); _has_value = true;
+    //             }
+
+    //             template <typename U = T,
+    //                       std::enable_if_t<
+    //                           !std::is_nothrow_copy_constructible_v<U> &&
+    //                           !std::is_nothrow_move_constructible_v<U> &&
+    //                           std::is_nothrow_move_constructible_v<E>>* =
+    //                           nullptr>
+    //             void assign_value_to_error(const expected_storage& other)
+    //             {
+    //                 unexpected<E> temp(std::move(_error));
+    //                 _error.~unexpected<E>();
+    //                 try {
+    //                     new (std::addressof(_value)) T(other._value);
+    //                     _has_value = true;
+    //                 } catch (...) {
+    //                     new (std::addressof(_error))
+    //                     unexpected<E>(std::move(temp)); throw;
+    //                 }
+    //             }
+    // #else
+    //             void assign_value_to_error(const expected_storage& other)
+    //             noexcept {
+    //                 _error.~unexpected<E>();
+    //                 new (std::addressof(_value)) T(other._value);
+    //                 _has_value = true;
+    //             }
+    // #endif
+
+    // #if MTL_EXCEPTIONS
+    //             template <typename G = E,
+    //                       std::enable_if_t<
+    //                           std::is_nothrow_copy_constructible_v<G>>* =
+    //                           nullptr>
+    //             void assign_error_to_value(const expected_storage& other)
+    //             noexcept {
+    //                 _value.~T();
+    //                 new (std::addressof(_error))
+    //                 unexpected<E>(other._error); _has_value = false;
+    //             }
+
+    //             template <typename G = E,
+    //                       std::enable_if_t<
+    //                           !std::is_nothrow_copy_constructible_v<G> &&
+    //                           std::is_nothrow_move_constructible_v<G>>* =
+    //                           nullptr>
+    //             void assign_error_to_value(const expected_storage& other)
+    //             noexcept {
+    //                 unexpected<E> temp(other._error);
+    //                 _value.~T();
+    //                 new (std::addressof(_error))
+    //                     unexpected<E>(std::move(other._error));
+    //                 _has_value = false;
+    //             }
+
+    //             template <typename G = E,
+    //                       std::enable_if_t<
+    //                           !std::is_nothrow_copy_constructible_v<G> &&
+    //                           !std::is_nothrow_move_constructible_v<G> &&
+    //                           std::is_nothrow_move_constructible_v<T>>* =
+    //                           nullptr>
+    //             void assign_error_to_value(const expected_storage& other)
+    //             {
+    //                 T temp(std::move(_value));
+    //                 _value.~T();
+    //                 try {
+    //                     new (std::addressof(_error))
+    //                     unexpected<E>(other._error); _has_value = false;
+    //                 } catch (...) {
+    //                     new (std::addressof(_value)) T(std::move(temp));
+    //                     throw;
+    //                 }
+    //             }
+    // #else
+    //             void assign_error_to_value(const expected_storage& other)
+    //             noexcept {
+    //                 _value.~T();
+    //                 new (std::addressof(_error))
+    //                 unexpected<E>(other._error); _has_value = false;
+    //             }
+    // #endif
+
+    // #if MTL_EXCEPTIONS
+    //             template <typename U = T,
+    //                       std::enable_if_t<
+    //                           std::is_nothrow_move_constructible_v<U>>* =
+    //                           nullptr>
+    //             void move_value_to_error(expected_storage&& other)
+    //             noexcept {
+    //                 _error.~unexpected<E>();
+    //                 new (std::addressof(_value))
+    //                 T(std::move(other._value)); _has_value = true;
+    //             }
+
+    //             template <typename U = T,
+    //                       std::enable_if_t<
+    //                           !std::is_nothrow_move_constructible_v<U>>*
+    //                           = nullptr>
+    //             void move_value_to_error(expected_storage&& other) {
+    //                 unexpected<E> temp(std::move(_error));
+    //                 _error.~unexpected<E>();
+    //                 try {
+    //                     new (std::addressof(_value))
+    //                     T(std::move(other._value)); _has_value = true;
+    //                 } catch (...) {
+    //                     new (std::addressof(_error))
+    //                     unexpected<E>(std::move(temp)); throw;
+    //                 }
+    //             }
+    // #else
+    //             void move_value_to_error(expected_storage&& other)
+    //             noexcept {
+    //                 _error.~unexpected<E>();
+    //                 new (std::addressof(_value))
+    //                 T(std::move(other._value)); _has_value = true;
+    //             }
+    // #endif
+
+    // #if MTL_EXCEPTIONS
+    //             template <typename G = E,
+    //                       std::enable_if_t<
+    //                           std::is_nothrow_move_constructible_v<G>>* =
+    //                           nullptr>
+    //             void move_error_to_value(expected_storage&& other)
+    //             noexcept {
+    //                 _value.~T();
+    //                 new (std::addressof(_error))
+    //                     unexpected<E>(std::move(other._error));
+    //                 _has_value = false;
+    //             }
+
+    //             template <typename G = E,
+    //                       std::enable_if_t<
+    //                           !std::is_nothrow_move_constructible_v<G>>*
+    //                           = nullptr>
+    //             void move_error_to_value(expected_storage&& other) {
+    //                 T temp(std::move(_value));
+    //                 _value.~T();
+    //                 try {
+    //                     new (std::addressof(_error))
+    //                         unexpected<E>(std::move(other._error));
+    //                     _has_value = false;
+    //                 } catch (...) {
+    //                     new (std::addressof(_value)) T(std::move(temp));
+    //                     throw;
+    //                 }
+    //             }
+    // #else
+    //             void move_error_to_value(expected_storage&& other)
+    //             noexcept {
+    //                 _value.~T();
+    //                 new (std::addressof(_error))
+    //                     unexpected<E>(std::move(other._error));
+    //                 _has_value = false;
+    //             }
+    // #endif
+
+    // #if MTL_EXCEPTIONS
+    //             template <typename... Args> T& emplace(Args&&... args) {
+    //                 if (_has_value) {
+    //                     _value = T(std::forward<Args>(args)...);
+    //                 } else if (std::is_nothrow_constructible_v<T,
+    //                 Args...>) {
+    //                     _error.~unexpected<E>();
+    //                     new (std::addressof(_value))
+    //                     T(std::forward<Args>(args)...); _has_value =
+    //                     true;
+    //                 } else if (std::is_nothrow_move_constructible_v<T>) {
+    //                     T temp(std::forward<Args>(args)...);
+    //                     _error.~unexpected<E>();
+    //                     new (std::addressof(_value)) T(std::move(temp));
+    //                     _has_value = true;
+    //                 } else {
+    //                     unexpected<E> temp(std::move(_error));
+    //                     _error.~unexpected<E>();
+    //                     try {
+    //                         new (std::addressof(_value))
+    //                             T(std::forward<Args>(args)...);
+    //                         _has_value = true;
+    //                     } catch (...) {
+    //                         new (std::addressof(_error))
+    //                             unexpected<E>(std::move(temp));
+    //                         throw;
+    //                     }
+    //                 }
+    //                 return _value;
+    //             }
+
+    //             template <typename U, typename... Args>
+    //             T& emplace(initializer_list<U> list, Args&&... args) {
+    //                 if (_has_value) {
+    //                     _value = T(list, std::forward<Args>(args)...);
+    //                 } else if (std::is_nothrow_constructible_v<
+    //                                T, initializer_list<U>&, Args...>) {
+    //                     _error.~unexpected<E>();
+    //                     new (std::addressof(_value))
+    //                         T(list, std::forward<Args>(args)...);
+    //                     _has_value = true;
+    //                 } else if (std::is_nothrow_move_constructible_v<T>) {
+    //                     T temp(list, std::forward<Args>(args)...);
+    //                     _error.~unexpected<E>();
+    //                     new (std::addressof(_value)) T(std::move(temp));
+    //                     _has_value = true;
+    //                 } else {
+    //                     unexpected<E> temp(std::move(_error));
+    //                     _error.~unexpected<E>();
+    //                     try {
+    //                         new (std::addressof(_value))
+    //                             T(list, std::forward<Args>(args)...);
+    //                         _has_value = true;
+    //                     } catch (...) {
+    //                         new (std::addressof(_error))
+    //                             unexpected<E>(std::move(temp));
+    //                         throw;
+    //                     }
+    //                 }
+    //                 return _value;
+    //             }
+    // #else
+    //             template <typename... Args> T& emplace(Args&&... args) {
+    //                 if (_has_value) {
+    //                     _value = T(std::forward<Args>(args)...);
+    //                 } else if (std::is_nothrow_constructible_v<T,
+    //                 Args...>) {
+    //                     _error.~unexpected<E>();
+    //                     new (std::addressof(_value))
+    //                     T(std::forward<Args>(args)...); _has_value =
+    //                     true;
+    //                 } else if (std::is_nothrow_move_constructible_v<T>) {
+    //                     T temp(std::forward<Args>(args)...);
+    //                     _error.~unexpected<E>();
+    //                     new (std::addressof(_value)) T(std::move(temp));
+    //                     _has_value = true;
+    //                 } else {
+    //                     _error.~unexpected<E>();
+    //                     new (std::addressof(_value))
+    //                     T(std::forward<Args>(args)...); _has_value =
+    //                     true;
+    //                 }
+    //                 return _value;
+    //             }
+
+    //             template <typename U, typename... Args>
+    //             T& emplace(initializer_list<U> list, Args&&... args) {
+    //                 if (_has_value) {
+    //                     _value = T(list, std::forward<Args>(args)...);
+    //                 } else if (std::is_nothrow_constructible_v<
+    //                                T, initializer_list<U>&, Args...>) {
+    //                     _error.~unexpected<E>();
+    //                     new (std::addressof(_value))
+    //                         T(list, std::forward<Args>(args)...);
+    //                     _has_value = true;
+    //                 } else if (std::is_nothrow_move_constructible_v<T>) {
+    //                     T temp(list, std::forward<Args>(args)...);
+    //                     _error.~unexpected<E>();
+    //                     new (std::addressof(_value)) T(std::move(temp));
+    //                     _has_value = true;
+    //                 } else {
+    //                     _error.~unexpected<E>();
+    //                     new (std::addressof(_value))
+    //                         T(list, std::forward<Args>(args)...);
+    //                     _has_value = true;
+    //                 }
+    //                 return _value;
+    //             }
+    // #endif
+
+    // #if MTL_EXCEPTIONS
+    //             void swap(expected_storage& other) {
+    //                 if (_has_value) {
+    //                     if (other._has_value) {
+    //                         using std::swap;
+    //                         swap(_value, other._value);
+    //                     } else {
+    //                         if (std::is_nothrow_move_constructible_v<E>)
+    //                         {
+    //                             unexpected<E>
+    //                             temp(std::move(other._error));
+    //                             _error.~unexpected<E>();
+    //                             new (std::addressof(other._value))
+    //                                 T(std::move(_value));
+    //                             _value.~T();
+    //                             new (std::addressof(_error))
+    //                                 unexpected<E>(std::move(temp));
+    //                             _has_value = false;
+    //                             other._has_value = true;
+    //                         } else {
+    //                             T temp(std::move(_value));
+    //                             _value.~T();
+    //                             new (std::addressof(_error))
+    //                                 unexpected<E>(std::move(other._error));
+    //                             other._error.~unexpected<E>();
+    //                             new (std::addressof(other._value))
+    //                                 T(std::move(temp));
+    //                             _has_value = false;
+    //                             other._has_value = true;
+    //                         }
+    //                     }
+    //                 } else {
+    //                     if (other._has_value) {
+    //                         other.swap(*this);
+    //                     } else {
+    //                         using std::swap;
+    //                         swap(_error, other._error);
+    //                     }
+    //                 }
+    //             }
+    // #else
+    //             void swap(expected_storage& other) {
+    //                 if (_has_value) {
+    //                     if (other._has_value) {
+    //                         using std::swap;
+    //                         swap(_value, other._value);
+    //                     } else {
+    //                         if (std::is_nothrow_move_constructible_v<E>)
+    //                         {
+    //                             unexpected<E>
+    //                             temp(std::move(other._error));
+    //                             _error.~unexpected<E>();
+    //                             new (std::addressof(other._value))
+    //                                 T(std::move(_value));
+    //                             _value.~T();
+    //                             new (std::addressof(_error))
+    //                                 unexpected<E>(std::move(temp));
+    //                             _has_value = false;
+    //                             other._has_value = true;
+    //                         } else {
+    //                             T temp(std::move(_value));
+    //                             _value.~T();
+    //                             new (std::addressof(_error))
+    //                                 unexpected<E>(std::move(other._error));
+    //                             other._error.~unexpected<E>();
+    //                             new (std::addressof(other._value))
+    //                                 T(std::move(temp));
+    //                             _has_value = false;
+    //                             other._has_value = true;
+    //                         }
+    //                     }
+    //                 } else {
+    //                     if (other._has_value) {
+    //                         other.swap(*this);
+    //                     } else {
+    //                         using std::swap;
+    //                         swap(_error, other._error);
+    //                     }
+    //                 }
+    //             }
+    // #endif
+
+    //             bool _has_value;
+    //             union {
+    //                 T _value;
+    //                 unexpected<E> _error;
+    //             };
+    //         };
+
+    //         template <typename E> class expected_storage<void, E> {
+    //         public:
+    //             constexpr expected_storage() : _has_value(true) {}
+
+    //             constexpr expected_storage(const expected_storage& other)
+    //                 : _has_value(other._has_value) {
+    //                 if (!_has_value)
+    //                     new (std::addressof(_error))
+    //                         unexpected<E>(other._error.value());
+    //             }
+
+    //             constexpr expected_storage(expected_storage&& other)
+    //                 : _has_value(other._has_value) {
+    //                 if (!_has_value)
+    //                     new (std::addressof(_error))
+    //                         unexpected<E>(std::move(other._error.value()));
+    //             }
+
+    //             template <typename G>
+    //             constexpr expected_storage(const expected<void, G>&
+    //             other)
+    //                 : _has_value(other.has_value()) {
+    //                 if (!_has_value)
+    //                     new (std::addressof(_error))
+    //                     unexpected<E>(other.error());
+    //             }
+
+    //             template <typename G>
+    //             constexpr expected_storage(expected<void, G>&& other)
+    //                 : _has_value(other.has_value()) {
+    //                 if (!_has_value)
+    //                     new (std::addressof(_error))
+    //                         unexpected<E>(std::move(other.error()));
+    //             }
+
+    //             constexpr expected_storage(in_place_t) : _has_value(true)
+    //             {}
+
+    //             template <typename... Args>
+    //             constexpr expected_storage(unexpect_t, Args&&... args)
+    //             noexcept {
+    //                 new (std::addressof(_error))
+    //                     unexpected<E>(std::forward<Args>(args)...);
+    //                 _has_value = false;
+    //             }
+
+    //             expected_storage& operator=(const expected_storage&
+    //             other) {
+    //                 if (_has_value == other._has_value) {
+    //                     if (!_has_value) {
+    //                         _error = other._error;
+    //                     }
+    //                 } else if (_has_value) {
+    //                     new (std::addressof(_error))
+    //                     unexpected<E>(other._error); _has_value = false;
+    //                 } else {
+    //                     _error.~unexpected<E>();
+    //                     _has_value = true;
+    //                 }
+    //                 return *this;
+    //             }
+
+    //             expected_storage& operator=(expected_storage&& other) {
+    //                 if (_has_value == other._has_value) {
+    //                     if (!_has_value) {
+    //                         _error = std::move(other._error);
+    //                     }
+    //                 } else if (_has_value) {
+    //                     new (std::addressof(_error))
+    //                         unexpected<E>(std::move(other._error));
+    //                     _has_value = false;
+    //                 } else {
+    //                     _error.~unexpected<E>();
+    //                     _has_value = true;
+    //                 }
+    //                 return *this;
+    //             }
+
+    //             // P0323R10 has multiple errors for this operator, so we
+    //             do what
+    //             // we think is right
+    //             template <typename G = E>
+    //             expected_storage& operator=(const unexpected<G>& error) {
+    //                 if (_has_value) {
+    //                     new (std::addressof(_error))
+    //                     unexpected(error.value()); _has_value = false;
+    //                 } else {
+    //                     _error = unexpected(error.value());
+    //                 }
+    //                 return *this;
+    //             }
+
+    //             template <typename G = E>
+    //             expected_storage& operator=(unexpected<G>&& error) {
+    //                 if (_has_value) {
+    //                     new (std::addressof(_error))
+    //                         unexpected(std::move(error.value()));
+    //                     _has_value = false;
+    //                 } else {
+    //                     _error = unexpected(std::move(error.value()));
+    //                 }
+    //                 return *this;
+    //             }
+
+    //             ~expected_storage() {
+    //                 if (!_has_value)
+    //                     _error.~unexpected<E>();
+    //             }
+
+    //             void swap(expected_storage& other) {
+    //                 if (_has_value && !other._has_value) {
+    //                     new (std::addressof(_error))
+    //                         unexpected(std::move(other._error));
+    //                     _has_value = false;
+    //                     other._error.~unexpected<E>();
+    //                     other._has_value = true;
+    //                 } else if (!_has_value) {
+    //                     if (other._has_value) {
+    //                         other.swap(*this);
+    //                     } else {
+    //                         using std::swap;
+    //                         std::swap(_error, other._error);
+    //                     }
+    //                 }
+    //             }
+
+    //             bool _has_value;
+    //             union {
+    //                 unexpected<E> _error;
+    //             };
+    //         };
+    //     } // namespace detail
 } // namespace mtl
