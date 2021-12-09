@@ -196,41 +196,22 @@ namespace mtl {
             _construct_error(std::move(e));
         }
 
-        ///@@@
+        template <typename... Args>
+        requires((std::is_void_v<T> && sizeof...(Args) == 0) ||
+                 (!std::is_void_v<T> &&
+                     std::is_constructible_v<T,
+                         Args...>)) constexpr explicit expected(in_place_t,
+            Args&&... args) {
+            _construct_value(std::forward<Args>(args)...);
+        }
 
-        //         template <
-        //             typename... Args,
-        //             std::enable_if_t<std::is_void_v<T>>
-        //             ||
-        //                              std::is_constructible_v<T,
-        //                              Args...>>* = nullptr>
-        //         constexpr explicit expected(in_place_t, Args&&... args)
-        //             : base(std::in_place, std::forward<Args>(args)...) {}
-
-        // #if defined(_MSC_VER)
-        //         // I don't know why MSVC doesn't accept the constraints
-        //         below, but
-        //         // it doesn't. Removing them seems to make it happy with
-        //         the unit
-        //         // tests.
-        //         template <typename U, typename... Args>
-        // #else
-        //         template <
-        //             typename U, typename... Args,
-        //             std::enable_if_t<!std::is_void_v<T>>
-        //             &&
-        //                              std::is_constructible_v<T,
-        //                              initializer_list<U>&,
-        //                                                      Args...>>* =
-        //                                                      nullptr>
-        // #endif
-        //         constexpr explicit expected(in_place_t,
-        //         initializer_list<U> list,
-        //                                     Args&&... args)
-        //             : base(std::in_place, list,
-        //             std::forward<Args>(args)...)
-        //             {
-        //         }
+        template <typename U, typename... Args>
+        requires(!std::is_void_v<T> &&
+                 std::is_constructible_v<T, initializer_list<U>&,
+                     Args...>) constexpr explicit expected(in_place_t,
+            initializer_list<U> il, Args&&... args) {
+            _construct_value(il, std::forward<Args>(args)...);
+        }
 
         template <typename... Args>
         requires(std::is_constructible_v<E,
@@ -238,19 +219,17 @@ namespace mtl {
             _construct_error(std::forward<Args>(args)...);
         }
 
-        //         template <typename U, typename... Args,
-        //                   std::enable_if_t<std::is_constructible_v<
-        //                       E, initializer_list<U>&, Args...>>* =
-        //                       nullptr>
-        //         constexpr explicit expected(unexpect_t,
-        //         initializer_list<U> list,
-        //                                     Args&&... args)
-        //             : base(unexpect, std::in_place, list,
-        //             std::forward<Args>(args)...) {
-        //         }
+        template <typename U, typename... Args>
+        requires(std::is_constructible_v<E, initializer_list<U>&,
+            Args...>) constexpr explicit expected(unexpect_t,
+            initializer_list<U> il, Args&&... args) {
+            _construct_error(il, std::forward<Args>(args)...);
+        }
 
         //  �.�.4.2 Destructor [expected.object.dtor]
         ~expected() = default;
+
+        ///@@@
 
         //         // �.�.4.3, assignment
         //         expected&
