@@ -32,6 +32,8 @@
 
 namespace mtl {
 
+    using std::in_place;
+
     // �.�.8 unexpect tag [expected.unexpect]
     struct unexpect_t {};
     inline constexpr unexpect_t unexpect;
@@ -89,8 +91,6 @@ namespace mtl {
             }
         }
 
-        // TODO: instead of specialization, we could add a copy-constructor to
-        // expected_storage<>
         template <typename = void>
         requires(std::is_void_v<T>&&
                 std::is_move_constructible_v<E>) constexpr expected(expected&&
@@ -136,7 +136,16 @@ namespace mtl {
             }
         }
 
-        // TODO: void specialization of the above?
+        template <typename G>
+        requires(std::is_void_v<T>) explicit(
+            !std::is_convertible_v<const G&,
+                E>) constexpr expected(const expected<void, G>& rhs) {
+            if (bool(rhs)) {
+                _construct_value();
+            } else {
+                _construct_error(rhs.error());
+            }
+        }
 
         template <typename U, typename G>
         requires(
@@ -169,8 +178,16 @@ namespace mtl {
                 _construct_error(std::move(rhs.error()));
             }
         }
-
-        // TODO: void specialization of the above?
+        template <typename G>
+        requires(std::is_void_v<T>) explicit(
+            !std::is_convertible_v<G&&, E>) constexpr expected(expected<void,
+            G>&& rhs) {
+            if (bool(rhs)) {
+                _construct_value();
+            } else {
+                _construct_error(std::move(rhs.error()));
+            }
+        }
 
         template <typename U = T>
         requires(!std::is_void_v<T> && std::is_constructible_v<T, U&&> &&
@@ -216,14 +233,14 @@ namespace mtl {
         template <typename... Args>
         requires(std::is_constructible_v<E,
             Args...>) constexpr explicit expected(unexpect_t, Args&&... args) {
-            _construct_error(std::forward<Args>(args)...);
+            _construct_error(in_place, std::forward<Args>(args)...);
         }
 
         template <typename U, typename... Args>
         requires(std::is_constructible_v<E, initializer_list<U>&,
             Args...>) constexpr explicit expected(unexpect_t,
             initializer_list<U> il, Args&&... args) {
-            _construct_error(il, std::forward<Args>(args)...);
+            _construct_error(in_place, il, std::forward<Args>(args)...);
         }
 
         //  �.�.4.2 Destructor [expected.object.dtor]
@@ -336,12 +353,12 @@ namespace mtl {
         // �.�.4.5 Observers [expected.object.observe]
         template <typename = void>
         requires(!std::is_void_v<T>) constexpr const T* operator->() const {
-            return addressof(this->_value);
+            return std::addressof(this->_value);
         }
 
         template <typename = void>
         requires(!std::is_void_v<T>) constexpr T* operator->() {
-            return addressof(this->_value);
+            return std::addressof(this->_value);
         }
 
         template <typename = void>

@@ -209,240 +209,246 @@ TEST_CASE("~expected()") {
     // TODO: with void error
 }
 
-// TEST_CASE("expected constructors", "[expected]") {
+TEST_CASE("expected constructors", "[expected]") {
 
-//     SECTION("default") {
-//         mtl::expected<DefaultInt, Error> a;
-//         REQUIRE(a.has_value());
-//         REQUIRE(*a == DefaultInt::DefaultValue);
+    SECTION("default") {
+        mtl::expected<DefaultInt, Error> a;
+        REQUIRE(a.has_value());
+        REQUIRE(*a == DefaultInt::DefaultValue);
 
-//         mtl::expected<void, Error> b;
-//         REQUIRE(b.has_value());
-//     }
+        mtl::expected<void, Error> b;
+        REQUIRE(b.has_value());
+    }
 
-//     SECTION("from value") {
-//         mtl::expected<IntValue, Error> a{123};
-//         REQUIRE(a.has_value());
-//         REQUIRE(*a == 123);
-//     }
+    SECTION("from value") {
+        mtl::expected<IntValue, Error> a{123};
+        REQUIRE(a.has_value());
+        REQUIRE(*a == 123);
+    }
 
-//     SECTION("from complex value") {
-//         const IntValue a{100};
-//         IntMoveableValue b{200};
-//         mtl::expected<ComplexThing, Error> c{std::in_place, a,
-//         std::move(b)}; REQUIRE(c->a == 100); REQUIRE(c->b == 200);
-//         REQUIRE(a == 100);
-//         REQUIRE(b == 0);
-//     }
+    SECTION("from complex value") {
+        const IntValue a{100};
+        IntMoveableValue b{200};
+        mtl::expected<ComplexThing, Error> c{std::in_place, a, std::move(b)};
+        REQUIRE(c->a == 100);
+        REQUIRE(c->b == 200);
+        REQUIRE(a == 100);
+        REQUIRE(b == 0);
+    }
 
-//     SECTION("from error") {
-//         mtl::unexpected error{Error::IOError};
-//         mtl::expected<IntValue, Error> a{error};
-//         REQUIRE(!a.has_value());
-//         REQUIRE(a.error() == Error::IOError);
+    SECTION("from error") {
+        mtl::unexpected error{Error::IOError};
+        mtl::expected<IntValue, Error> a{error};
+        REQUIRE(!a.has_value());
+        REQUIRE(a.error() == Error::IOError);
 
-//         mtl::unexpected error2{Error::FlyingSquirrels};
-//         mtl::expected<void, Error> b{error2};
-//         REQUIRE(!b.has_value());
-//         REQUIRE(b.error() == Error::FlyingSquirrels);
-//     }
+        mtl::unexpected error2{Error::FlyingSquirrels};
+        mtl::expected<void, Error> b{error2};
+        REQUIRE(!b.has_value());
+        REQUIRE(b.error() == Error::FlyingSquirrels);
+    }
 
-//     SECTION("from complex error") {
+    SECTION("from complex error") {
 
-//         mtl::unexpected<ComplexThing> error{
-//             ComplexThing{IntValue{100}, IntMoveableValue{200}}};
-//         mtl::expected<int, ComplexThing> c{std::move(error)};
-//         REQUIRE(c.error().a == 100);
-//         REQUIRE(c.error().b == 200);
-//         REQUIRE(error.value().a == 100);
-//         REQUIRE(error.value().b == 0);
-//     }
+        mtl::unexpected<ComplexThing> error{
+            ComplexThing{IntValue{100}, IntMoveableValue{200}}};
+        mtl::expected<int, ComplexThing> c{std::move(error)};
+        REQUIRE(c.error().a == 100);
+        REQUIRE(c.error().b == 200);
+        REQUIRE(error.value().a == 100);
+        REQUIRE(error.value().b == 0);
+    }
 
-//     SECTION("in-place with value") {
-//         mtl::expected<IntValue, Error> a{std::in_place, 123};
-//         REQUIRE(*a == 123);
-//     }
+    SECTION("in-place with value") {
+        mtl::expected<IntValue, Error> a{std::in_place, 123};
+        REQUIRE(*a == 123);
+    }
 
-//     SECTION("in-place with multiple parameters") {
-//         const IntValue a{100};
-//         IntMoveableValue b{200};
-//         mtl::expected<ComplexThing, Error> c{std::in_place, a,
-//         std::move(b)}; REQUIRE(c->a == 100); REQUIRE(c->b == 200);
-//         REQUIRE(a == 100);
-//         REQUIRE(b == 0);
-//     }
+    SECTION("in-place with multiple parameters") {
+        const IntValue a{100};
+        IntMoveableValue b{200};
+        mtl::expected<ComplexThing, Error> c{std::in_place, a, std::move(b)};
+        REQUIRE(c->a == 100);
+        REQUIRE(c->b == 200);
+        REQUIRE(a == 100);
+        REQUIRE(b == 0);
+    }
 
-//     SECTION("in-place with initializer list") {
-//         mtl::expected<std::vector<int>, Error> a{std::in_place, {1, 2,
-//         3}}; REQUIRE(a->size() == 3);
-//     }
+    SECTION("in-place with initializer list") {
+        mtl::expected<std::vector<int>, Error> a{std::in_place, {1, 2, 3}};
+        REQUIRE(a->size() == 3);
+    }
 
-//     SECTION("in-place with initializer list and extra parameters") {
-//         const IntValue a(100);
-//         IntMoveableValue b(200);
-//         mtl::expected<ComplexThing, Error> c{
-//             std::in_place, {1, 2, 3}, a, std::move(b)};
-//         REQUIRE(c->a == 100);
-//         REQUIRE(c->b == 200);
-//         REQUIRE(c->list.size() == 3);
-//         REQUIRE(a == 100);
-//         REQUIRE(b == 0);
-//     }
+    SECTION("in-place with initializer list and extra parameters") {
+        const IntValue a(100);
+        IntMoveableValue b(200);
+        mtl::expected<ComplexThing, Error> c{
+            std::in_place, {1, 2, 3}, a, std::move(b)};
+        REQUIRE(c->a == 100);
+        REQUIRE(c->b == 200);
+        REQUIRE(c->list.size() == 3);
+        REQUIRE(a == 100);
+        REQUIRE(b == 0);
+    }
 
-//     SECTION("unexpect_t with value") {
-//         mtl::expected<int, IntValue> a{mtl::unexpect, 123};
+    SECTION("unexpect_t with value") {
+        mtl::expected<int, IntValue> a{mtl::unexpect, 123};
 
-//         REQUIRE(!a.has_value());
-//         REQUIRE(a.error() == 123);
-//     }
+        REQUIRE(!a.has_value());
+        REQUIRE(a.error() == 123);
+    }
 
-//     SECTION("unexpect_t with initializer list") {
-//         mtl::expected<int, std::vector<int>> a{mtl::unexpect, {1, 2, 3}};
-//         REQUIRE(a.error().size() == 3);
-//     }
+    SECTION("unexpect_t with initializer list") {
+        mtl::expected<int, std::vector<int>> a{mtl::unexpect, {1, 2, 3}};
+        REQUIRE(a.error().size() == 3);
+    }
 
-//     SECTION("unexpect_t with multiple parameters") {
-//         const IntValue a{100};
-//         IntMoveableValue b{200};
-//         mtl::expected<int, ComplexThing> c{mtl::unexpect, a,
-//         std::move(b)}; REQUIRE(c.error().a == 100); REQUIRE(c.error().b
-//         == 200); REQUIRE(a == 100); REQUIRE(b == 0);
-//     }
+    SECTION("unexpect_t with multiple parameters") {
+        const IntValue a{100};
+        IntMoveableValue b{200};
+        mtl::expected<int, ComplexThing> c{mtl::unexpect, a, std::move(b)};
+        REQUIRE(c.error().a == 100);
+        REQUIRE(c.error().b == 200);
+        REQUIRE(a == 100);
+        REQUIRE(b == 0);
+    }
 
-//     SECTION("unexpect_t with initializer list and extra parameters") {
-//         const IntValue a(100);
-//         IntMoveableValue b(200);
-//         mtl::expected<int, ComplexThing> c{
-//             mtl::unexpect, {1, 2, 3}, a, std::move(b)};
-//         REQUIRE(c.error().a == 100);
-//         REQUIRE(c.error().b == 200);
-//         REQUIRE(c.error().list.size() == 3);
-//         REQUIRE(a == 100);
-//         REQUIRE(b == 0);
-//     }
+    SECTION("unexpect_t with initializer list and extra parameters") {
+        const IntValue a(100);
+        IntMoveableValue b(200);
+        mtl::expected<int, ComplexThing> c{
+            mtl::unexpect, {1, 2, 3}, a, std::move(b)};
+        REQUIRE(c.error().a == 100);
+        REQUIRE(c.error().b == 200);
+        REQUIRE(c.error().list.size() == 3);
+        REQUIRE(a == 100);
+        REQUIRE(b == 0);
+    }
 
-//     SECTION("copy - value") {
-//         const mtl::expected<IntValue, Error> a{3};
-//         mtl::expected<IntValue, Error> b{a};
-//         REQUIRE(a.has_value());
-//         REQUIRE(b.has_value());
-//         REQUIRE(*a == 3);
-//         REQUIRE(*b == 3);
+    SECTION("copy - value") {
+        const mtl::expected<IntValue, Error> a{3};
+        mtl::expected<IntValue, Error> b{a};
+        REQUIRE(a.has_value());
+        REQUIRE(b.has_value());
+        REQUIRE(*a == 3);
+        REQUIRE(*b == 3);
 
-//         const mtl::expected<void, Error> c;
-//         mtl::expected<void, Error> d{c};
-//         REQUIRE(c.has_value());
-//         REQUIRE(d.has_value());
-//     }
+        const mtl::expected<void, Error> c;
+        mtl::expected<void, Error> d{c};
+        REQUIRE(c.has_value());
+        REQUIRE(d.has_value());
+    }
 
-//     SECTION("copy - error") {
-//         const mtl::expected<IntValue, Error> a{
-//             mtl::unexpected(Error::FileNotFound)};
-//         mtl::expected<IntValue, Error> b{a};
-//         REQUIRE(!a.has_value());
-//         REQUIRE(!b.has_value());
-//         REQUIRE(a.error() == Error::FileNotFound);
-//         REQUIRE(b.error() == Error::FileNotFound);
+    SECTION("copy - error") {
+        const mtl::expected<IntValue, Error> a{
+            mtl::unexpected(Error::FileNotFound)};
+        mtl::expected<IntValue, Error> b{a};
+        REQUIRE(!a.has_value());
+        REQUIRE(!b.has_value());
+        REQUIRE(a.error() == Error::FileNotFound);
+        REQUIRE(b.error() == Error::FileNotFound);
 
-//         const mtl::expected<void, Error>
-//         c{mtl::unexpected(Error::IOError)}; mtl::expected<void, Error>
-//         d{c}; REQUIRE(!c.has_value()); REQUIRE(!d.has_value());
-//         REQUIRE(c.error() == Error::IOError);
-//         REQUIRE(d.error() == Error::IOError);
-//     }
+        const mtl::expected<void, Error> c{mtl::unexpected(Error::IOError)};
+        mtl::expected<void, Error> d{c};
+        REQUIRE(!c.has_value());
+        REQUIRE(!d.has_value());
+        REQUIRE(c.error() == Error::IOError);
+        REQUIRE(d.error() == Error::IOError);
+    }
 
-//     SECTION("move - value") {
-//         mtl::expected<IntMoveableValue, Error> a{4};
-//         const mtl::expected<IntMoveableValue, Error> b{std::move(a)};
-//         REQUIRE(a.has_value());
-//         REQUIRE(b.has_value());
-//         REQUIRE(*a == 0);
-//         REQUIRE(*b == 4);
+    SECTION("move - value") {
+        mtl::expected<IntMoveableValue, Error> a{4};
+        const mtl::expected<IntMoveableValue, Error> b{std::move(a)};
+        REQUIRE(a.has_value());
+        REQUIRE(b.has_value());
+        REQUIRE(*a == 0);
+        REQUIRE(*b == 4);
 
-//         mtl::expected<void, Error> c;
-//         const mtl::expected<void, Error> d{std::move(c)};
-//         REQUIRE(c.has_value());
-//         REQUIRE(d.has_value());
-//     }
+        mtl::expected<void, Error> c;
+        const mtl::expected<void, Error> d{std::move(c)};
+        REQUIRE(c.has_value());
+        REQUIRE(d.has_value());
+    }
 
-//     SECTION("move - error") {
-//         mtl::expected<IntValue, IntMoveableValue> a{
-//             mtl::unexpected<IntMoveableValue>{55}};
-//         const mtl::expected<IntValue, IntMoveableValue> b{std::move(a)};
-//         REQUIRE(!a.has_value());
-//         REQUIRE(!b.has_value());
-//         REQUIRE(a.error() == 0);
-//         REQUIRE(b.error() == 55);
+    SECTION("move - error") {
+        mtl::expected<IntValue, IntMoveableValue> a{
+            mtl::unexpected<IntMoveableValue>{55}};
+        const mtl::expected<IntValue, IntMoveableValue> b{std::move(a)};
+        REQUIRE(!a.has_value());
+        REQUIRE(!b.has_value());
+        REQUIRE(a.error() == 0);
+        REQUIRE(b.error() == 55);
 
-//         mtl::expected<void, IntMoveableValue> c{
-//             mtl::unexpected<IntMoveableValue>{66}};
-//         const mtl::expected<void, IntMoveableValue> d{std::move(c)};
-//         REQUIRE(!c.has_value());
-//         REQUIRE(!d.has_value());
-//         REQUIRE(c.error() == 0);
-//         REQUIRE(d.error() == 66);
-//     }
+        mtl::expected<void, IntMoveableValue> c{
+            mtl::unexpected<IntMoveableValue>{66}};
+        const mtl::expected<void, IntMoveableValue> d{std::move(c)};
+        REQUIRE(!c.has_value());
+        REQUIRE(!d.has_value());
+        REQUIRE(c.error() == 0);
+        REQUIRE(d.error() == 66);
+    }
 
-//     SECTION("copy with conversion - value") {
-//         const mtl::expected<IntValue, Error> a{123};
-//         mtl::expected<LongValue, Error> b{a};
-//         REQUIRE(a.has_value());
-//         REQUIRE(b.has_value());
-//         REQUIRE(*a == 123);
-//         REQUIRE(*b == 123l);
+    SECTION("copy with conversion - value") {
+        const mtl::expected<IntValue, Error> a{123};
+        mtl::expected<LongValue, Error> b{a};
+        REQUIRE(a.has_value());
+        REQUIRE(b.has_value());
+        REQUIRE(*a == 123);
+        REQUIRE(*b == 123l);
 
-//         const mtl::expected<void, Error> c;
-//         mtl::expected<void, Error> d{c};
-//         REQUIRE(c.has_value());
-//         REQUIRE(d.has_value());
-//     }
+        const mtl::expected<void, Error> c;
+        mtl::expected<void, Error> d{c};
+        REQUIRE(c.has_value());
+        REQUIRE(d.has_value());
+    }
 
-//     SECTION("copy with conversion - error") {
-//         const mtl::expected<IntValue, IntValue> a{mtl::unexpected(456)};
-//         mtl::expected<LongValue, LongValue> b{a};
-//         REQUIRE(!a.has_value());
-//         REQUIRE(!b.has_value());
-//         REQUIRE(a.error() == 456);
-//         REQUIRE(b.error() == 456l);
+    SECTION("copy with conversion - error") {
+        const mtl::expected<IntValue, IntValue> a{mtl::unexpected(456)};
+        mtl::expected<LongValue, LongValue> b{a};
+        REQUIRE(!a.has_value());
+        REQUIRE(!b.has_value());
+        REQUIRE(a.error() == 456);
+        REQUIRE(b.error() == 456l);
 
-//         const mtl::expected<void, IntValue> c{mtl::unexpected(789)};
-//         mtl::expected<void, LongValue> d{c};
-//         REQUIRE(!c.has_value());
-//         REQUIRE(!d.has_value());
-//         REQUIRE(c.error() == 789);
-//         REQUIRE(d.error() == 789l);
-//     }
+        const mtl::expected<void, IntValue> c{mtl::unexpected(789)};
+        mtl::expected<void, LongValue> d{c};
+        REQUIRE(!c.has_value());
+        REQUIRE(!d.has_value());
+        REQUIRE(c.error() == 789);
+        REQUIRE(d.error() == 789l);
+    }
 
-//     SECTION("move with conversion - value") {
-//         mtl::expected<IntMoveableValue, IntMoveableValue> a{69};
-//         mtl::expected<LongMoveableValue, LongMoveableValue>
-//         b{std::move(a)}; REQUIRE(a.has_value()); REQUIRE(b.has_value());
-//         REQUIRE(*a == 0);
-//         REQUIRE(*b == 69l);
+    SECTION("move with conversion - value") {
+        mtl::expected<IntMoveableValue, IntMoveableValue> a{69};
+        mtl::expected<LongMoveableValue, LongMoveableValue> b{std::move(a)};
+        REQUIRE(a.has_value());
+        REQUIRE(b.has_value());
+        REQUIRE(*a == 0);
+        REQUIRE(*b == 69l);
 
-//         mtl::expected<void, IntMoveableValue> c;
-//         mtl::expected<void, LongMoveableValue> d{std::move(c)};
-//         REQUIRE(c.has_value());
-//         REQUIRE(d.has_value());
-//     }
+        mtl::expected<void, IntMoveableValue> c;
+        mtl::expected<void, LongMoveableValue> d{std::move(c)};
+        REQUIRE(c.has_value());
+        REQUIRE(d.has_value());
+    }
 
-//     SECTION("move with conversion - error") {
-//         mtl::expected<IntMoveableValue, IntMoveableValue> a{
-//             mtl::unexpected(456)};
-//         mtl::expected<LongMoveableValue, LongMoveableValue>
-//         b{std::move(a)}; REQUIRE(!a.has_value());
-//         REQUIRE(!b.has_value());
-//         REQUIRE(a.error() == 0);
-//         REQUIRE(b.error() == 456l);
+    SECTION("move with conversion - error") {
+        mtl::expected<IntMoveableValue, IntMoveableValue> a{
+            mtl::unexpected(456)};
+        mtl::expected<LongMoveableValue, LongMoveableValue> b{std::move(a)};
+        REQUIRE(!a.has_value());
+        REQUIRE(!b.has_value());
+        REQUIRE(a.error() == 0);
+        REQUIRE(b.error() == 456l);
 
-//         mtl::expected<void, IntMoveableValue> c{mtl::unexpected(789)};
-//         mtl::expected<void, LongMoveableValue> d{std::move(c)};
-//         REQUIRE(!c.has_value());
-//         REQUIRE(!d.has_value());
-//         REQUIRE(c.error() == 0);
-//         REQUIRE(d.error() == 789l);
-//     }
-// }
+        mtl::expected<void, IntMoveableValue> c{mtl::unexpected(789)};
+        mtl::expected<void, LongMoveableValue> d{std::move(c)};
+        REQUIRE(!c.has_value());
+        REQUIRE(!d.has_value());
+        REQUIRE(c.error() == 0);
+        REQUIRE(d.error() == 789l);
+    }
+}
 
 // TEST_CASE("expected assignments", "[expected]") {
 

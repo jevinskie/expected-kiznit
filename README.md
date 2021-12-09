@@ -31,3 +31,5 @@ Yes it is. Although it is labelled as "preview", it is fully functional and used
 - Generate code coverage and publish it somewhere?
 - Refactor/rewrite unit tests and get to 100% coverage
 - Support for C++17? C++14?
+- Fix formatting: clang-format cannot handle requires() properly
+- Handle trivially constructible/copyable/moveable/destructible/...
