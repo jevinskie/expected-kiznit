@@ -31,32 +31,163 @@
 
 enum class Error { FileNotFound, IOError, FlyingSquirrels };
 
-std::expected<int, Error> g1;
+TEST_CASE("expected types") {
+    using T = std::expected<short, bool>;
 
-// TODO: we want these in a test, they should compile
-std::expected<void, Error> g2;
-std::expected<const void, Error> g3;
-std::expected<volatile void, Error> g4;
-std::expected<const volatile void, Error> g5;
+    static_assert(std::is_same_v<T::value_type, short>);
+    static_assert(std::is_same_v<T::error_type, bool>);
+    static_assert(std::is_same_v<T::unexpected_type, mtl::unexpected<bool>>);
 
-// TEST_CASE("expected type aliases", "[expected]") {
-//     using T = mtl::expected<short, bool>;
+    using U = std::expected<void, bool>;
+    static_assert(std::is_void_v<U::value_type>);
+}
 
-//     static_assert(std::is_same_v<T::value_type, short>);
-//     static_assert(std::is_same_v<T::error_type, bool>);
-//     static_assert(std::is_same_v<T::unexpected_type, mtl::unexpected<bool>>);
+TEST_CASE("rebind<>") {
+    using T = std::expected<short, bool>;
+    using U = T::rebind<long>;
 
-//     using U = mtl::expected<void, bool>;
-//     static_assert(std::is_void_v<U::value_type>);
-// }
+    static_assert(std::is_same_v<U::value_type, long>);
+    static_assert(std::is_same_v<U::error_type, bool>);
+}
 
-// TEST_CASE("expected rebind", "[expected]") {
-//     using T = mtl::expected<short, bool>;
-//     using U = T::rebind<long>;
+TEST_CASE("expected()") {
+    SECTION("value") {
+        std::expected<DefaultInt, Error> a;
+        REQUIRE(a);
+        REQUIRE(*a == DefaultInt::DefaultValue);
+    }
 
-//     static_assert(std::is_same_v<U::value_type, long>);
-//     static_assert(std::is_same_v<U::error_type, bool>);
-// }
+    SECTION("void value") {
+        std::expected<void, Error> a;
+        REQUIRE(a);
+
+        std::expected<const void, Error> b;
+        REQUIRE(b);
+
+        std::expected<volatile void, Error> c;
+        REQUIRE(c);
+
+        std::expected<const volatile void, Error> d;
+        REQUIRE(d);
+    }
+}
+
+TEST_CASE("expected(const expected&)") {
+    SECTION("value") {
+        const std::expected<IntValue, Error> a(100);
+        auto b(a);
+
+        REQUIRE(a);
+        REQUIRE(*a == 100);
+        REQUIRE(b);
+        REQUIRE(*b == 100);
+    }
+    SECTION("void value") {
+        const std::expected<void, Error> a;
+        auto b(a);
+
+        REQUIRE(a);
+        REQUIRE(b);
+    }
+
+    SECTION("error") {
+        const std::expected<int, Error> a(std::unexpect,
+                                          Error::FlyingSquirrels);
+        auto b(a);
+
+        REQUIRE(!a);
+        REQUIRE(a.error() == Error::FlyingSquirrels);
+        REQUIRE(!b);
+        REQUIRE(b.error() == Error::FlyingSquirrels);
+    }
+
+    SECTION("void error") {
+        const std::expected<void, Error> a(std::unexpect,
+                                           Error::FlyingSquirrels);
+        auto b(a);
+
+        REQUIRE(!a);
+        REQUIRE(a.error() == Error::FlyingSquirrels);
+        REQUIRE(!b);
+        REQUIRE(b.error() == Error::FlyingSquirrels);
+    }
+}
+
+TEST_CASE("expected(expected&&)") {
+    SECTION("value") {
+        std::expected<IntMoveableValue, Error> a(200);
+        auto b(std::move(a));
+
+        REQUIRE(a);
+        REQUIRE(*a == 0);
+        REQUIRE(b);
+        REQUIRE(*b == 200);
+    }
+
+    SECTION("void value") {
+        std::expected<void, Error> a;
+        auto b(std::move(a));
+
+        REQUIRE(a);
+        REQUIRE(b);
+    }
+
+    SECTION("error") {
+        std::expected<int, IntMoveableValue> a(std::unexpect, 456);
+        auto b(std::move(a));
+
+        REQUIRE(!a);
+        REQUIRE(a.error() == 0);
+        REQUIRE(!b);
+        REQUIRE(b.error() == 456);
+    }
+
+    SECTION("void error") {
+        std::expected<void, IntMoveableValue> a(std::unexpect, 123);
+        auto b(std::move(a));
+
+        REQUIRE(!a);
+        REQUIRE(a.error() == 0);
+        REQUIRE(!b);
+        REQUIRE(b.error() == 123);
+    }
+}
+
+TEST_CASE("expected(U&& v)") {
+    SECTION("same type") {
+        std::expected<short, Error> a(short(42));
+        REQUIRE(*a == 42);
+    }
+
+    SECTION("different type") {
+        std::expected<short, Error> a(char(43));
+        REQUIRE(*a == 43);
+    }
+}
+
+TEST_CASE("expected(unexpect_t, Args&&...)") {
+    SECTION("error") {
+        std::expected<int, Error> a(std::unexpect, Error::FileNotFound);
+        REQUIRE(!a);
+        REQUIRE(a.error() == Error::FileNotFound);
+    }
+
+    SECTION("void error") {
+        std::expected<void, Error> a(std::unexpect, Error::IOError);
+        REQUIRE(!a);
+        REQUIRE(a.error() == Error::IOError);
+    }
+
+    // TODO: error with extra params
+    // TODO: void error with extra params
+}
+
+TEST_CASE("~expected()") {
+    // TODO: with value
+    // TODO: with void value
+    // TODO: with error
+    // TODO: with void error
+}
 
 // TEST_CASE("expected constructors", "[expected]") {
 
@@ -78,9 +209,8 @@ std::expected<const volatile void, Error> g5;
 //     SECTION("from complex value") {
 //         const IntValue a{100};
 //         IntMoveableValue b{200};
-//         mtl::expected<ComplexThing, Error> c{std::in_place, a, std::move(b)};
-//         REQUIRE(c->a == 100);
-//         REQUIRE(c->b == 200);
+//         mtl::expected<ComplexThing, Error> c{std::in_place, a,
+//         std::move(b)}; REQUIRE(c->a == 100); REQUIRE(c->b == 200);
 //         REQUIRE(a == 100);
 //         REQUIRE(b == 0);
 //     }
@@ -116,16 +246,15 @@ std::expected<const volatile void, Error> g5;
 //     SECTION("in-place with multiple parameters") {
 //         const IntValue a{100};
 //         IntMoveableValue b{200};
-//         mtl::expected<ComplexThing, Error> c{std::in_place, a, std::move(b)};
-//         REQUIRE(c->a == 100);
-//         REQUIRE(c->b == 200);
+//         mtl::expected<ComplexThing, Error> c{std::in_place, a,
+//         std::move(b)}; REQUIRE(c->a == 100); REQUIRE(c->b == 200);
 //         REQUIRE(a == 100);
 //         REQUIRE(b == 0);
 //     }
 
 //     SECTION("in-place with initializer list") {
-//         mtl::expected<std::vector<int>, Error> a{std::in_place, {1, 2, 3}};
-//         REQUIRE(a->size() == 3);
+//         mtl::expected<std::vector<int>, Error> a{std::in_place, {1, 2,
+//         3}}; REQUIRE(a->size() == 3);
 //     }
 
 //     SECTION("in-place with initializer list and extra parameters") {
@@ -155,11 +284,9 @@ std::expected<const volatile void, Error> g5;
 //     SECTION("unexpect_t with multiple parameters") {
 //         const IntValue a{100};
 //         IntMoveableValue b{200};
-//         mtl::expected<int, ComplexThing> c{mtl::unexpect, a, std::move(b)};
-//         REQUIRE(c.error().a == 100);
-//         REQUIRE(c.error().b == 200);
-//         REQUIRE(a == 100);
-//         REQUIRE(b == 0);
+//         mtl::expected<int, ComplexThing> c{mtl::unexpect, a,
+//         std::move(b)}; REQUIRE(c.error().a == 100); REQUIRE(c.error().b
+//         == 200); REQUIRE(a == 100); REQUIRE(b == 0);
 //     }
 
 //     SECTION("unexpect_t with initializer list and extra parameters") {
@@ -197,10 +324,9 @@ std::expected<const volatile void, Error> g5;
 //         REQUIRE(a.error() == Error::FileNotFound);
 //         REQUIRE(b.error() == Error::FileNotFound);
 
-//         const mtl::expected<void, Error> c{mtl::unexpected(Error::IOError)};
-//         mtl::expected<void, Error> d{c};
-//         REQUIRE(!c.has_value());
-//         REQUIRE(!d.has_value());
+//         const mtl::expected<void, Error>
+//         c{mtl::unexpected(Error::IOError)}; mtl::expected<void, Error>
+//         d{c}; REQUIRE(!c.has_value()); REQUIRE(!d.has_value());
 //         REQUIRE(c.error() == Error::IOError);
 //         REQUIRE(d.error() == Error::IOError);
 //     }
@@ -269,9 +395,8 @@ std::expected<const volatile void, Error> g5;
 
 //     SECTION("move with conversion - value") {
 //         mtl::expected<IntMoveableValue, IntMoveableValue> a{69};
-//         mtl::expected<LongMoveableValue, LongMoveableValue> b{std::move(a)};
-//         REQUIRE(a.has_value());
-//         REQUIRE(b.has_value());
+//         mtl::expected<LongMoveableValue, LongMoveableValue>
+//         b{std::move(a)}; REQUIRE(a.has_value()); REQUIRE(b.has_value());
 //         REQUIRE(*a == 0);
 //         REQUIRE(*b == 69l);
 
@@ -284,8 +409,8 @@ std::expected<const volatile void, Error> g5;
 //     SECTION("move with conversion - error") {
 //         mtl::expected<IntMoveableValue, IntMoveableValue> a{
 //             mtl::unexpected(456)};
-//         mtl::expected<LongMoveableValue, LongMoveableValue> b{std::move(a)};
-//         REQUIRE(!a.has_value());
+//         mtl::expected<LongMoveableValue, LongMoveableValue>
+//         b{std::move(a)}; REQUIRE(!a.has_value());
 //         REQUIRE(!b.has_value());
 //         REQUIRE(a.error() == 0);
 //         REQUIRE(b.error() == 456l);
@@ -316,7 +441,8 @@ std::expected<const volatile void, Error> g5;
 //     SECTION("assign error to error") {
 //         const mtl::expected<IntValue, Error> a{
 //             mtl::unexpected(Error::FileNotFound)};
-//         mtl::expected<IntValue, Error> b{mtl::unexpected(Error::IOError)};
+//         mtl::expected<IntValue, Error>
+//         b{mtl::unexpected(Error::IOError)};
 
 //         b = a;
 
@@ -326,7 +452,8 @@ std::expected<const volatile void, Error> g5;
 //         REQUIRE(b.error() == Error::FileNotFound);
 //     }
 
-//     SECTION("assign_value_to_error - is_nothrow_copy_constructible_v<>") {
+//     SECTION("assign_value_to_error - is_nothrow_copy_constructible_v<>")
+//     {
 //         using type = mtl::expected<IntValue, Error>;
 //         static_assert(std::is_nothrow_copy_constructible_v<type::value_type>);
 
@@ -341,7 +468,8 @@ std::expected<const volatile void, Error> g5;
 //         REQUIRE(*b == 111);
 //     }
 
-//     SECTION("assign_value_to_error - is_nothrow_move_constructible_v<>") {
+//     SECTION("assign_value_to_error - is_nothrow_move_constructible_v<>")
+//     {
 //         using type = mtl::expected<std::vector<int>, Error>;
 //         static_assert(!std::is_nothrow_copy_constructible_v<type::value_type>);
 //         static_assert(std::is_nothrow_move_constructible_v<type::value_type>);
@@ -378,7 +506,8 @@ std::expected<const volatile void, Error> g5;
 //     }
 
 // #if MTL_EXCEPTIONS
-//     SECTION("assign_value_to_error - neither + throws exception on copy") {
+//     SECTION("assign_value_to_error - neither + throws exception on copy")
+//     {
 //         using type = mtl::expected<AssignableComplexThing, Error>;
 //         static_assert(!std::is_nothrow_copy_constructible_v<type::value_type>);
 //         static_assert(!std::is_nothrow_move_constructible_v<type::value_type>);
@@ -398,7 +527,8 @@ std::expected<const volatile void, Error> g5;
 //     }
 // #endif
 
-//     SECTION("assign_error_to_value - is_nothrow_copy_constructible_v<>") {
+//     SECTION("assign_error_to_value - is_nothrow_copy_constructible_v<>")
+//     {
 //         using type = mtl::expected<IntValue, Error>;
 //         static_assert(std::is_nothrow_copy_constructible_v<type::error_type>);
 
@@ -413,7 +543,8 @@ std::expected<const volatile void, Error> g5;
 //         REQUIRE(b.error() == Error::FlyingSquirrels);
 //     }
 
-//     SECTION("assign_error_to_value - is_nothrow_move_constructible_v<>") {
+//     SECTION("assign_error_to_value - is_nothrow_move_constructible_v<>")
+//     {
 //         using type = mtl::expected<IntValue, std::vector<int>>;
 //         static_assert(!std::is_nothrow_copy_constructible_v<type::error_type>);
 //         static_assert(std::is_nothrow_move_constructible_v<type::error_type>);
@@ -451,7 +582,8 @@ std::expected<const volatile void, Error> g5;
 //     }
 
 // #if MTL_EXCEPTIONS
-//     SECTION("assign_error_to_value - neither + throws exception on copy") {
+//     SECTION("assign_error_to_value - neither + throws exception on copy")
+//     {
 //         using type = mtl::expected<IntValue, AssignableComplexThing>;
 //         static_assert(!std::is_nothrow_copy_constructible_v<type::error_type>);
 //         static_assert(!std::is_nothrow_move_constructible_v<type::error_type>);
@@ -460,8 +592,8 @@ std::expected<const volatile void, Error> g5;
 //             AssignableComplexThing{std::vector<int>{1, 2, 3}, 45, 69})};
 //         type b{333};
 
-//         const_cast<AssignableComplexThing&>(a.error()).throwsOnCopy = true;
-//         REQUIRE_THROWS_AS(b = a, std::exception);
+//         const_cast<AssignableComplexThing&>(a.error()).throwsOnCopy =
+//         true; REQUIRE_THROWS_AS(b = a, std::exception);
 
 //         REQUIRE(!a.has_value());
 //         REQUIRE(a.error().a == 45);
@@ -693,7 +825,8 @@ std::expected<const volatile void, Error> g5;
 //     }
 
 // #if MTL_EXCEPTIONS
-//     SECTION("move_error_to_value - void specialization - throws on move") {
+//     SECTION("move_error_to_value - void specialization - throws on move")
+//     {
 //         using type = mtl::expected<void, IntMoveableValue>;
 
 //         type a{mtl::unexpect, 143};
@@ -736,9 +869,9 @@ std::expected<const volatile void, Error> g5;
 //         // construction
 //         type d{mtl::unexpected(666)};
 //         d.error().throwsOnMove = true;
-//         REQUIRE_THROWS_AS(d = NotNoThrowConstructible{55}, std::exception);
-//         REQUIRE(!d.has_value());
-//         REQUIRE(d.error() == 666);
+//         REQUIRE_THROWS_AS(d = NotNoThrowConstructible{55},
+//         std::exception); REQUIRE(!d.has_value()); REQUIRE(d.error() ==
+//         666);
 // #endif
 //     }
 
@@ -811,9 +944,10 @@ std::expected<const volatile void, Error> g5;
 //     }
 
 //     SECTION("emplace() - has error - path 1") {
-//         mtl::expected<IntValue, Error> a{mtl::unexpect, Error::FileNotFound};
-//         static_assert(
-//             std::is_nothrow_constructible_v<decltype(a)::value_type, int>);
+//         mtl::expected<IntValue, Error> a{mtl::unexpect,
+//         Error::FileNotFound}; static_assert(
+//             std::is_nothrow_constructible_v<decltype(a)::value_type,
+//             int>);
 
 //         const auto& ref = a.emplace(77);
 
@@ -825,7 +959,8 @@ std::expected<const volatile void, Error> g5;
 //         mtl::expected<std::vector<int>, Error> a{mtl::unexpect,
 //                                                  Error::FileNotFound};
 //         static_assert(
-//             !std::is_nothrow_constructible_v<decltype(a)::value_type, int>);
+//             !std::is_nothrow_constructible_v<decltype(a)::value_type,
+//             int>);
 //         static_assert(
 //             std::is_nothrow_move_constructible_v<decltype(a)::value_type>);
 
@@ -839,7 +974,8 @@ std::expected<const volatile void, Error> g5;
 //         mtl::expected<NotNoThrowConstructible, Error> a{mtl::unexpect,
 //                                                         Error::FileNotFound};
 //         static_assert(
-//             !std::is_nothrow_constructible_v<decltype(a)::value_type, int>);
+//             !std::is_nothrow_constructible_v<decltype(a)::value_type,
+//             int>);
 //         static_assert(
 //             !std::is_nothrow_move_constructible_v<decltype(a)::value_type>);
 
@@ -850,7 +986,8 @@ std::expected<const volatile void, Error> g5;
 //     }
 
 //     SECTION("emplace() - has error - path 3 - throws") {
-//         // TODO: same as path 3 above, but needs to throw on construction of
+//         // TODO: same as path 3 above, but needs to throw on construction
+//         of
 //         // T(std::foward<Arg>(args)...)
 //     }
 
@@ -871,7 +1008,8 @@ std::expected<const volatile void, Error> g5;
 //     //                                           Error::FileNotFound};
 //     //     static_assert(
 //     //         std::is_nothrow_constructible_v<
-//     //             decltype(a)::value_type, std::initializer_list<int>, int,
+//     //             decltype(a)::value_type, std::initializer_list<int>,
+//     int,
 //     //             int>);
 
 //     //     a.emplace({1, 2, 3}, 6, 9);
@@ -888,7 +1026,8 @@ std::expected<const volatile void, Error> g5;
 //     //                                           Error::FileNotFound};
 //     //     static_assert(
 //     //         !std::is_nothrow_constructible_v<
-//     //             decltype(a)::value_type, std::initializer_list<int>, int,
+//     //             decltype(a)::value_type, std::initializer_list<int>,
+//     int,
 //     //             int>);
 //     //     static_assert(
 //     // std::is_nothrow_move_constructible_v<decltype(a)::value_type>);
@@ -931,9 +1070,9 @@ std::expected<const volatile void, Error> g5;
 //     }
 
 //     SECTION("swap two errors") {
-//         mtl::expected<IntValue, Error> a{mtl::unexpect, Error::FileNotFound};
-//         mtl::expected<IntValue, Error> b{mtl::unexpect,
-//         Error::FlyingSquirrels}; a.swap(b);
+//         mtl::expected<IntValue, Error> a{mtl::unexpect,
+//         Error::FileNotFound}; mtl::expected<IntValue, Error>
+//         b{mtl::unexpect, Error::FlyingSquirrels}; a.swap(b);
 
 //         REQUIRE(a.error() == Error::FlyingSquirrels);
 //         REQUIRE(b.error() == Error::FileNotFound);
@@ -1006,7 +1145,8 @@ std::expected<const volatile void, Error> g5;
 
 //     SECTION("swap value and error - void specialization") {
 //         mtl::expected<void, Error> a{};
-//         mtl::expected<void, Error> b{mtl::unexpect, Error::FlyingSquirrels};
+//         mtl::expected<void, Error> b{mtl::unexpect,
+//         Error::FlyingSquirrels};
 
 //         a.swap(b);
 
@@ -1091,16 +1231,18 @@ std::expected<const volatile void, Error> g5;
 // #if MTL_EXCEPTIONS
 //     SECTION("value() - has error") {
 //         // &
-//         mtl::expected<int, Error> a{mtl::unexpected(Error::FileNotFound)};
+//         mtl::expected<int, Error>
+//         a{mtl::unexpected(Error::FileNotFound)};
 //         REQUIRE_THROWS_AS(a.value(), mtl::bad_expected_access<Error>);
 
 //         // const&
 //         const mtl::expected<int, Error>
-//         b{mtl::unexpected(Error::FileNotFound)}; REQUIRE_THROWS_AS(b.value(),
-//         mtl::bad_expected_access<Error>);
+//         b{mtl::unexpected(Error::FileNotFound)};
+//         REQUIRE_THROWS_AS(b.value(), mtl::bad_expected_access<Error>);
 
 //         // &&
-//         mtl::expected<int, Error> c{mtl::unexpected(Error::FileNotFound)};
+//         mtl::expected<int, Error>
+//         c{mtl::unexpected(Error::FileNotFound)};
 //         REQUIRE_THROWS_AS(std::move(c).value(),
 //                           mtl::bad_expected_access<Error>);
 
@@ -1180,7 +1322,8 @@ std::expected<const volatile void, Error> g5;
 //         REQUIRE(e == f);
 //     }
 
-//     SECTION("expected and expected - mix and match void specialization") {
+//     SECTION("expected and expected - mix and match void specialization")
+//     {
 //         const mtl::expected<int, int> a{1};
 //         const mtl::expected<void, int> b{};
 //         const mtl::expected<int, int> c{mtl::unexpect, 1};

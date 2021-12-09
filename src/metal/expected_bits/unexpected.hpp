@@ -110,7 +110,7 @@ namespace mtl {
         template <class Err = E>
         requires std::is_assignable_v<E, const Err>
         constexpr unexpected& operator=(unexpected<Err>&& e) {
-            _value = std::move(e).value();
+            _value = std::move(e.value());
             return *this;
         }
 

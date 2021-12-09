@@ -138,13 +138,17 @@ namespace mtl {
         template <typename T, typename E>
         struct expected_storage : expected_storage_base<T, E> {
 
-            constexpr void _construct_value() {
-                new (std::addressof(this->_value)) T();
+            template <typename... Args>
+            constexpr void _construct_value(Args&&... args) {
+                new (std::addressof(this->_value))
+                    T(std::forward<Args>(args)...);
                 this->_has_value = true;
             }
 
-            constexpr void _construct_error() {
-                new (std::addressof(this->_error)) unexpected<E>();
+            template <typename... Args>
+            constexpr void _construct_error(Args&&... args) {
+                new (std::addressof(this->_error))
+                    unexpected<E>(std::forward<Args>(args)...);
                 this->_has_value = false;
             }
 
@@ -159,8 +163,10 @@ namespace mtl {
 
             constexpr void _construct_value() { this->_has_value = true; }
 
-            constexpr void _construct_error() {
-                new (std::addressof(this->_error)) unexpected<E>();
+            template <typename... Args>
+            constexpr void _construct_error(Args&&... args) {
+                new (std::addressof(this->_error))
+                    unexpected<E>(std::forward<Args>(args)...);
                 this->_has_value = false;
             }
 

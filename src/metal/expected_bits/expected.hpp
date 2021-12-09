@@ -75,9 +75,35 @@ namespace mtl {
             }
         }
 
-        ///@@@
+        template <typename = void>
+        requires(
+            std::is_move_constructible_v<T>&& std::is_move_constructible_v<
+                E>) constexpr expected(expected&&
+                                           rhs) noexcept(std::
+                                                             is_nothrow_move_constructible_v<
+                                                                 T>&& std::
+                                                                 is_nothrow_move_constructible_v<
+                                                                     E>) {
 
-        //         constexpr expected(expected&&) noexcept();
+            if (bool(rhs)) {
+                _construct_value(std::move(*rhs));
+            } else {
+                _construct_error(std::move(rhs.error()));
+            }
+        }
+
+        template <typename = void>
+        requires(std::is_void_v<T>&& std::is_move_constructible_v<E>) constexpr expected(
+            expected&& rhs) noexcept(std::is_nothrow_move_constructible_v<E>) {
+
+            if (bool(rhs)) {
+                _construct_value();
+            } else {
+                _construct_error(std::move(rhs.error()));
+            }
+        }
+
+        ///@@@
 
         //         template <
         //             typename U, typename G,
@@ -214,18 +240,19 @@ namespace mtl {
         //             expected<void, G>&& other)
         //             : base(std::move(other)) {}
 
-        //         template <typename U = T,
-        //                   std::enable_if_t<
-        //                       !std::is_void_v<U> &&
-        //                       std::is_constructible_v<T, U&&> &&
-        //                       !std::is_same_v<std::remove_cvref_t<U>,
-        //                       in_place_t> && !std::is_same_v<expected<T,
-        //                       E>, std::remove_cvref_t<U>> &&
-        //                       !std::is_same_v<unexpected<E>,
-        //                       std::remove_cvref_t<U>>>* = nullptr>
-        //         explicit(!std::is_convertible_v<U&&, T>) constexpr
-        //         expected(U&& v)
-        //             : base(std::in_place, std::forward<U>(v)) {}
+        template <typename U = T>
+        requires(
+            !std::is_void_v<T> && std::is_constructible_v<T, U&&> &&
+            !std::is_same_v<std::remove_cvref_t<U>, in_place_t> &&
+            !std::is_same_v<std::remove_cvref_t<U>, expected<T, E>> &&
+            !std::is_same_v<
+                std::remove_cvref_t<U>,
+                unexpected<E>>) explicit(!std::
+                                             is_convertible_v<
+                                                 U&&,
+                                                 T>) constexpr expected(U&& v) {
+            _construct_value(std::forward<U>(v));
+        }
 
         //         template <
         //             typename G = E,
@@ -278,13 +305,12 @@ namespace mtl {
         //             {
         //         }
 
-        //         template <
-        //             typename... Args,
-        //             std::enable_if_t<std::is_constructible_v<E,
-        //             Args...>>* = nullptr>
-        //         constexpr explicit expected(unexpect_t, Args&&... args)
-        //             : base(unexpect, std::in_place,
-        //             std::forward<Args>(args)...) {}
+        template <typename... Args>
+        requires(std::is_constructible_v<
+                 E, Args...>) constexpr explicit expected(unexpect_t,
+                                                          Args&&... args) {
+            _construct_error(std::forward<Args>(args)...);
+        }
 
         //         template <typename U, typename... Args,
         //                   std::enable_if_t<std::is_constructible_v<
@@ -486,17 +512,15 @@ namespace mtl {
         //             return std::move(base::_value);
         //         }
 
-        //         constexpr const E& error() const& { return
-        //         base::_error.value(); }
+        constexpr const E& error() const& { return this->_error.value(); }
 
-        //         constexpr E& error() & { return base::_error.value(); }
+        constexpr E& error() & { return this->_error.value(); }
 
-        //         constexpr const E&& error() const&& {
-        //             return std::move(base::_error.value());
-        //         }
+        constexpr const E&& error() const&& {
+            return std::move(this->_error.value());
+        }
 
-        //         constexpr E&& error() && { return
-        //         std::move(base::_error.value()); }
+        constexpr E&& error() && { return std::move(this->_error.value()); }
 
         //         template <typename U> constexpr T value_or(U&& value)
         //         const&
