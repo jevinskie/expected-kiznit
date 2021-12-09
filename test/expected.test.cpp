@@ -60,15 +60,21 @@ TEST_CASE("expected()") {
     SECTION("void value") {
         std::expected<void, Error> a;
         REQUIRE(a);
+    }
 
-        std::expected<const void, Error> b;
-        REQUIRE(b);
+    SECTION("const void value") {
+        std::expected<const void, Error> a;
+        REQUIRE(a);
+    }
 
-        std::expected<volatile void, Error> c;
-        REQUIRE(c);
+    SECTION("volatile void value") {
+        std::expected<volatile void, Error> a;
+        REQUIRE(a);
+    }
 
-        std::expected<const volatile void, Error> d;
-        REQUIRE(d);
+    SECTION("const volatile void value") {
+        std::expected<const volatile void, Error> a;
+        REQUIRE(a);
     }
 }
 
@@ -91,8 +97,8 @@ TEST_CASE("expected(const expected&)") {
     }
 
     SECTION("error") {
-        const std::expected<int, Error> a(std::unexpect,
-                                          Error::FlyingSquirrels);
+        const std::expected<int, Error> a(
+            std::unexpect, Error::FlyingSquirrels);
         auto b(a);
 
         REQUIRE(!a);
@@ -102,8 +108,8 @@ TEST_CASE("expected(const expected&)") {
     }
 
     SECTION("void error") {
-        const std::expected<void, Error> a(std::unexpect,
-                                           Error::FlyingSquirrels);
+        const std::expected<void, Error> a(
+            std::unexpect, Error::FlyingSquirrels);
         auto b(a);
 
         REQUIRE(!a);
@@ -180,6 +186,20 @@ TEST_CASE("expected(unexpect_t, Args&&...)") {
 
     // TODO: error with extra params
     // TODO: void error with extra params
+}
+
+TEST_CASE("expected(const unexpected<G>&)") {
+    SECTION("error") {
+        std::expected<int, Error> a((mtl::unexpected(Error::FileNotFound)));
+        REQUIRE(!a);
+        REQUIRE(a.error() == Error::FileNotFound);
+    }
+
+    SECTION("void error)") {
+        std::expected<void, Error> a((mtl::unexpected(Error::IOError)));
+        REQUIRE(!a);
+        REQUIRE(a.error() == Error::IOError);
+    }
 }
 
 TEST_CASE("~expected()") {
