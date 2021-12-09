@@ -44,10 +44,12 @@
 
 namespace mtl {
 
-    template <class E> class bad_expected_access;
+    template <class E>
+    class bad_expected_access;
 
     // �.�.7 Class bad_expected_access<void> [expected.bad_expected_access_base]
-    template <> class bad_expected_access<void> : public std::exception {
+    template <>
+    class bad_expected_access<void> : public std::exception {
     public:
         explicit bad_expected_access() {}
         const char* what() const noexcept override {

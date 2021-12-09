@@ -45,25 +45,21 @@ namespace mtl {
         constexpr unexpected(unexpected&&) = default;
 
         template <typename Err>
-        requires(
-            std::is_constructible_v<E, Err> &&
-            !std::is_same_v<std::remove_cvref<Err>, in_place_t> &&
-            !std::is_same_v<std::remove_cvref<Err>,
-                            unexpected>) constexpr explicit unexpected(Err&& e)
+        requires(std::is_constructible_v<E, Err> &&
+                 !std::is_same_v<std::remove_cvref<Err>, in_place_t> &&
+                 !std::is_same_v<std::remove_cvref<Err>,
+                     unexpected>) constexpr explicit unexpected(Err&& e)
             : _value(std::forward<Err>(e)) {}
 
         template <typename... Args>
-        requires(std::is_constructible_v<
-                 E, Args...>) constexpr explicit unexpected(in_place_t,
-                                                            Args&&... args)
+        requires(std::is_constructible_v<E,
+            Args...>) constexpr explicit unexpected(in_place_t, Args&&... args)
             : _value(std::forward<Args>(args)...) {}
 
         template <typename U, typename... Args>
-        requires(std::is_constructible_v<
-                 E, initializer_list<U>&,
-                 Args...>) constexpr explicit unexpected(in_place_t,
-                                                         initializer_list<U> il,
-                                                         Args&&... args)
+        requires(std::is_constructible_v<E, initializer_list<U>&,
+            Args...>) constexpr explicit unexpected(in_place_t,
+            initializer_list<U> il, Args&&... args)
             : _value(il, std::forward<Args>(args)...) {}
 
         template <typename Err>
@@ -75,8 +71,7 @@ namespace mtl {
             !std::is_convertible_v<unexpected<Err>&, E> &&
             !std::is_convertible_v<unexpected<Err>, E> &&
             !std::is_convertible_v<const unexpected<Err>&, E> &&
-            !std::is_convertible_v<
-                const unexpected<Err>,
+            !std::is_convertible_v<const unexpected<Err>,
                 E>) constexpr explicit(!std::is_convertible_v<const Err&, E>)
             unexpected(const unexpected<Err>& e)
             : _value(e.value()) {}
@@ -90,8 +85,7 @@ namespace mtl {
                  !std::is_convertible_v<unexpected<Err>&, E> &&
                  !std::is_convertible_v<unexpected<Err>, E> &&
                  !std::is_convertible_v<const unexpected<Err>&, E> &&
-                 !std::is_convertible_v<
-                     const unexpected<Err>,
+                 !std::is_convertible_v<const unexpected<Err>,
                      E>) constexpr explicit(!std::is_convertible_v<Err, E>)
             unexpected(unexpected<Err>&& e)
             : _value(std::move(e.value())) {}
@@ -132,12 +126,12 @@ namespace mtl {
 
         // �.�.5.2.5 Equality operators [expected.unexpected.equality_op]
         template <typename E1, typename E2>
-        friend constexpr bool operator==(const unexpected<E1>& x,
-                                         const unexpected<E2>& y);
+        friend constexpr bool operator==(
+            const unexpected<E1>& x, const unexpected<E2>& y);
 
         template <typename E1, typename E2>
-        friend constexpr bool operator!=(const unexpected<E1>& x,
-                                         const unexpected<E2>& y);
+        friend constexpr bool operator!=(
+            const unexpected<E1>& x, const unexpected<E2>& y);
 
     private:
         E _value;
@@ -145,25 +139,26 @@ namespace mtl {
 
     // �.�.5.2.5 Equality operators [expected.unexpected.equality_op]
     template <typename E1, typename E2>
-    constexpr bool operator==(const unexpected<E1>& x,
-                              const unexpected<E2>& y) {
+    constexpr bool operator==(
+        const unexpected<E1>& x, const unexpected<E2>& y) {
         return x.value() == y.value();
     }
 
     template <typename E1, typename E2>
-    constexpr bool operator!=(const unexpected<E1>& x,
-                              const unexpected<E2>& y) {
+    constexpr bool operator!=(
+        const unexpected<E1>& x, const unexpected<E2>& y) {
         return x.value() != y.value();
     }
 
     // �.�.5.2.5 Specialized algorithms [expected.unexpected.specalg]
     template <typename E>
     requires std::is_swappable_v<E>
-    void swap(unexpected<E>& x,
-              unexpected<E>& y) noexcept(noexcept(x.swap(y))) {
+    void swap(unexpected<E>& x, unexpected<E>& y) noexcept(
+        noexcept(x.swap(y))) {
         x.swap(y);
     }
 
-    template <typename E> unexpected(E) -> unexpected<E>;
+    template <typename E>
+    unexpected(E) -> unexpected<E>;
 
 } // namespace mtl

@@ -52,7 +52,8 @@ namespace mtl {
         using error_type = E;
         using unexpected_type = unexpected<E>;
 
-        template <typename U> using rebind = expected<U, error_type>;
+        template <typename U>
+        using rebind = expected<U, error_type>;
 
         // �.�.4.1, constructors
 
@@ -65,9 +66,9 @@ namespace mtl {
         template <typename = void>
         requires((std::is_copy_constructible_v<T> ||
                   std::is_same_v<std::remove_cvref_t<T>,
-                                 void>)&&std::is_copy_constructible_v<E>
+                      void>)&&std::is_copy_constructible_v<E>
 
-                 ) constexpr expected(const expected& rhs) {
+            ) constexpr expected(const expected& rhs) {
             if (bool(*this)) {
                 _construct_value(*this);
             } else {
@@ -76,14 +77,10 @@ namespace mtl {
         }
 
         template <typename = void>
-        requires(
-            std::is_move_constructible_v<T>&& std::is_move_constructible_v<
-                E>) constexpr expected(expected&&
-                                           rhs) noexcept(std::
-                                                             is_nothrow_move_constructible_v<
-                                                                 T>&& std::
-                                                                 is_nothrow_move_constructible_v<
-                                                                     E>) {
+        requires(std::is_move_constructible_v<T>&&
+                std::is_move_constructible_v<E>) constexpr expected(expected&&
+                rhs) noexcept(std::is_nothrow_move_constructible_v<T>&&
+                std::is_nothrow_move_constructible_v<E>) {
 
             if (bool(rhs)) {
                 _construct_value(std::move(*rhs));
@@ -93,8 +90,9 @@ namespace mtl {
         }
 
         template <typename = void>
-        requires(std::is_void_v<T>&& std::is_move_constructible_v<E>) constexpr expected(
-            expected&& rhs) noexcept(std::is_nothrow_move_constructible_v<E>) {
+        requires(std::is_void_v<T>&&
+                std::is_move_constructible_v<E>) constexpr expected(expected&&
+                rhs) noexcept(std::is_nothrow_move_constructible_v<E>) {
 
             if (bool(rhs)) {
                 _construct_value();
@@ -241,16 +239,12 @@ namespace mtl {
         //             : base(std::move(other)) {}
 
         template <typename U = T>
-        requires(
-            !std::is_void_v<T> && std::is_constructible_v<T, U&&> &&
-            !std::is_same_v<std::remove_cvref_t<U>, in_place_t> &&
-            !std::is_same_v<std::remove_cvref_t<U>, expected<T, E>> &&
-            !std::is_same_v<
-                std::remove_cvref_t<U>,
-                unexpected<E>>) explicit(!std::
-                                             is_convertible_v<
-                                                 U&&,
-                                                 T>) constexpr expected(U&& v) {
+        requires(!std::is_void_v<T> && std::is_constructible_v<T, U&&> &&
+                 !std::is_same_v<std::remove_cvref_t<U>, in_place_t> &&
+                 !std::is_same_v<std::remove_cvref_t<U>, expected<T, E>> &&
+                 !std::is_same_v<std::remove_cvref_t<U>,
+                     unexpected<E>>) explicit(!std::is_convertible_v<U&&,
+                                              T>) constexpr expected(U&& v) {
             _construct_value(std::forward<U>(v));
         }
 
@@ -306,9 +300,8 @@ namespace mtl {
         //         }
 
         template <typename... Args>
-        requires(std::is_constructible_v<
-                 E, Args...>) constexpr explicit expected(unexpect_t,
-                                                          Args&&... args) {
+        requires(std::is_constructible_v<E,
+            Args...>) constexpr explicit expected(unexpect_t, Args&&... args) {
             _construct_error(std::forward<Args>(args)...);
         }
 

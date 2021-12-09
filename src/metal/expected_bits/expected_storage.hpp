@@ -34,8 +34,8 @@ namespace mtl {
     namespace detail {
 
         template <typename T, typename E,
-                  bool = std::is_trivially_destructible_v<T>,
-                  bool = std::is_trivially_destructible_v<E>>
+            bool = std::is_trivially_destructible_v<T>,
+            bool = std::is_trivially_destructible_v<E>>
         struct expected_storage_base {
 
             constexpr expected_storage_base() {}
