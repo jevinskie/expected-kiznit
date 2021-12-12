@@ -28,7 +28,7 @@
 #pragma once
 
 #include <metal/expected_bits/exception.hpp>
-#include <metal/expected_bits/expected_storage.hpp>
+#include <metal/expected_bits/unexpected.hpp>
 
 namespace mtl {
 
@@ -40,14 +40,7 @@ namespace mtl {
 
     // �.�.4 Class template expected [expected.expected]
     template <typename T, typename E>
-    requires(!std::is_same_v<T, unexpected<E>>) class expected
-        : private detail::expected_storage<T, E> {
-
-        using detail::expected_storage<T, E>::_construct_value;
-        using detail::expected_storage<T, E>::_construct_error;
-        // using detail::expected_storage<T, E>::_destroy_value;
-        // using detail::expected_storage<T, E>::_destroy_error;
-        using detail::expected_storage<T, E>::_has_value;
+    requires(!std::is_same_v<T, unexpected<E>>) class expected {
 
     public:
         using value_type = T;
@@ -61,9 +54,8 @@ namespace mtl {
 
         template <typename = void>
         requires(std::is_default_constructible_v<T> ||
-                 std::is_void_v<T>) constexpr expected() {
-            _construct_value();
-        }
+                 std::is_void_v<T>) constexpr expected()
+            : _value(), _has_value(true) {}
 
         template <typename = void>
         requires((std::is_copy_constructible_v<T> ||
@@ -72,9 +64,9 @@ namespace mtl {
 
             ) constexpr expected(const expected& rhs) {
             if (bool(*this)) {
-                _construct_value(*this);
+                construct_value(*this);
             } else {
-                _construct_error(rhs.error());
+                construct_error(rhs.error());
             }
         }
 
@@ -83,11 +75,10 @@ namespace mtl {
                 std::is_move_constructible_v<E>) constexpr expected(expected&&
                 rhs) noexcept(std::is_nothrow_move_constructible_v<T>&&
                 std::is_nothrow_move_constructible_v<E>) {
-
             if (bool(rhs)) {
-                _construct_value(std::move(*rhs));
+                construct_value(std::move(*rhs));
             } else {
-                _construct_error(std::move(rhs.error()));
+                construct_error(std::move(rhs.error()));
             }
         }
 
@@ -95,11 +86,10 @@ namespace mtl {
         requires(std::is_void_v<T>&&
                 std::is_move_constructible_v<E>) constexpr expected(expected&&
                 rhs) noexcept(std::is_nothrow_move_constructible_v<E>) {
-
             if (bool(rhs)) {
-                _construct_value();
+                construct_value();
             } else {
-                _construct_error(std::move(rhs.error()));
+                construct_error(std::move(rhs.error()));
             }
         }
 
@@ -130,9 +120,9 @@ namespace mtl {
                                       E>) constexpr expected(const expected<U,
             G>& rhs) {
             if (bool(rhs)) {
-                _construct_value(*rhs);
+                construct_value(*rhs);
             } else {
-                _construct_error(rhs.error());
+                construct_error(rhs.error());
             }
         }
 
@@ -141,9 +131,9 @@ namespace mtl {
             !std::is_convertible_v<const G&,
                 E>) constexpr expected(const expected<void, G>& rhs) {
             if (bool(rhs)) {
-                _construct_value();
+                construct_value();
             } else {
-                _construct_error(rhs.error());
+                construct_error(rhs.error());
             }
         }
 
@@ -173,9 +163,9 @@ namespace mtl {
                      !std::is_convertible_v<G&&,
                          E>) constexpr expected(expected<U, G>&& rhs) {
             if (bool(rhs)) {
-                _construct_value(std::move(*rhs));
+                construct_value(std::move(*rhs));
             } else {
-                _construct_error(std::move(rhs.error()));
+                construct_error(std::move(rhs.error()));
             }
         }
         template <typename G>
@@ -183,9 +173,9 @@ namespace mtl {
             !std::is_convertible_v<G&&, E>) constexpr expected(expected<void,
             G>&& rhs) {
             if (bool(rhs)) {
-                _construct_value();
+                construct_value();
             } else {
-                _construct_error(std::move(rhs.error()));
+                construct_error(std::move(rhs.error()));
             }
         }
 
@@ -196,21 +186,21 @@ namespace mtl {
                  !std::is_same_v<std::remove_cvref_t<U>,
                      unexpected<E>>) explicit(!std::is_convertible_v<U&&,
                                               T>) constexpr expected(U&& v) {
-            _construct_value(std::forward<U>(v));
+            construct_value(std::forward<U>(v));
         }
 
         template <typename G = E>
         requires(std::is_constructible_v<E, const G&>) explicit(
             !std::is_convertible_v<const G&,
                 E>) constexpr expected(const unexpected<G>& e) {
-            _construct_error(e);
+            construct_error(e);
         }
 
         template <typename G = E>
         requires(std::is_constructible_v<E, G&&>) explicit(
             !std::is_convertible_v<G&&, E>) constexpr expected(unexpected<G>&&
                 e) noexcept(std::is_nothrow_constructible_v<E, G&&>) {
-            _construct_error(std::move(e));
+            construct_error(std::move(e));
         }
 
         template <typename... Args>
@@ -219,7 +209,7 @@ namespace mtl {
                      std::is_constructible_v<T,
                          Args...>)) constexpr explicit expected(in_place_t,
             Args&&... args) {
-            _construct_value(std::forward<Args>(args)...);
+            construct_value(std::forward<Args>(args)...);
         }
 
         template <typename U, typename... Args>
@@ -227,24 +217,30 @@ namespace mtl {
                  std::is_constructible_v<T, initializer_list<U>&,
                      Args...>) constexpr explicit expected(in_place_t,
             initializer_list<U> il, Args&&... args) {
-            _construct_value(il, std::forward<Args>(args)...);
+            construct_value(il, std::forward<Args>(args)...);
         }
 
         template <typename... Args>
         requires(std::is_constructible_v<E,
             Args...>) constexpr explicit expected(unexpect_t, Args&&... args) {
-            _construct_error(in_place, std::forward<Args>(args)...);
+            construct_error(in_place, std::forward<Args>(args)...);
         }
 
         template <typename U, typename... Args>
         requires(std::is_constructible_v<E, initializer_list<U>&,
             Args...>) constexpr explicit expected(unexpect_t,
             initializer_list<U> il, Args&&... args) {
-            _construct_error(in_place, il, std::forward<Args>(args)...);
+            construct_error(in_place, il, std::forward<Args>(args)...);
         }
 
         //  �.�.4.2 Destructor [expected.object.dtor]
-        ~expected() = default;
+        ~expected() {
+            if (_has_value) {
+                _value.~T();
+            } else {
+                _error.~unexpected<E>();
+            }
+        }
 
         ///@@@
 
@@ -471,50 +467,63 @@ namespace mtl {
         //                                static_cast<T>(std::forward<U>(value));
         //         }
 
-        //         // �.�.4.7, Expected equality operators
-        //         template <typename T1, typename E1, typename T2, typename
-        //         E2> friend constexpr bool operator==(const expected<T1,
-        //         E1>& x,
-        //                                          const expected<T2, E2>&
-        //                                          y);
-        //         template <typename T1, typename E1, typename T2, typename
-        //         E2> friend constexpr bool operator!=(const expected<T1,
-        //         E1>& x,
-        //                                          const expected<T2, E2>&
-        //                                          y);
+        // �.�.4.7, Expected equality operators
+        template <typename T1, typename E1, typename T2, typename E2>
+        friend constexpr bool operator==(
+            const expected<T1, E1>& x, const expected<T2, E2>& y);
+        template <typename T1, typename E1, typename T2, typename E2>
+        friend constexpr bool operator!=(
+            const expected<T1, E1>& x, const expected<T2, E2>& y);
 
-        //         // �.�.4.8, Comparison with T
-        //         template <typename T1, typename E1, typename T2>
-        //         friend constexpr bool operator==(const expected<T1, E1>&,
-        //         const T2&); template <typename T1, typename E1, typename
-        //         T2> friend constexpr bool operator==(const T2&, const
-        //         expected<T1, E1>&); template <typename T1, typename E1,
-        //         typename T2> friend constexpr bool operator!=(const
-        //         expected<T1, E1>&, const T2&); template <typename T1,
-        //         typename E1, typename T2> friend constexpr bool
-        //         operator!=(const T2&, const expected<T1, E1>&);
+        // �.�.4.8, Comparison with T
+        template <typename T1, typename E1, typename T2>
+        friend constexpr bool operator==(const expected<T1, E1>&, const T2&);
+        template <typename T1, typename E1, typename T2>
+        friend constexpr bool operator==(const T2&, const expected<T1, E1>&);
+        template <typename T1, typename E1, typename T2>
+        friend constexpr bool operator!=(const expected<T1, E1>&, const T2&);
+        template <typename T1, typename E1, typename T2>
+        friend constexpr bool operator!=(const T2&, const expected<T1, E1>&);
 
-        //         // �.�.4.9, Comparison with unexpected<E>
-        //         template <typename T1, typename E1, typename E2>
-        //         friend constexpr bool operator==(const expected<T1, E1>&,
-        //                                          const unexpected<E2>&);
-        //         template <typename T1, typename E1, typename E2>
-        //         friend constexpr bool operator==(const unexpected<E2>&,
-        //                                          const expected<T1,
-        //                                          E1>&);
-        //         template <typename T1, typename E1, typename E2>
-        //         friend constexpr bool operator!=(const expected<T1, E1>&,
-        //                                          const unexpected<E2>&);
-        //         template <typename T1, typename E1, typename E2>
-        //         friend constexpr bool operator!=(const unexpected<E2>&,
-        //                                          const expected<T1,
-        //                                          E1>&);
+        // �.�.4.9, Comparison with unexpected<E>
+        template <typename T1, typename E1, typename E2>
+        friend constexpr bool operator==(
+            const expected<T1, E1>&, const unexpected<E2>&);
+        template <typename T1, typename E1, typename E2>
+        friend constexpr bool operator==(
+            const unexpected<E2>&, const expected<T1, E1>&);
+        template <typename T1, typename E1, typename E2>
+        friend constexpr bool operator!=(
+            const expected<T1, E1>&, const unexpected<E2>&);
+        template <typename T1, typename E1, typename E2>
+        friend constexpr bool operator!=(
+            const unexpected<E2>&, const expected<T1, E1>&);
 
-        //         // �.�.4.10, Specialized algorithms
-        //         template <typename T1, typename E1>
-        //         friend void swap(expected<T1, E1>& x,
-        //                          expected<T1, E1>& y)
-        //                          noexcept(noexcept(x.swap(y)));
+        // �.�.4.10, Specialized algorithms
+        template <typename T1, typename E1>
+        friend void swap(expected<T1, E1>& x, expected<T1, E1>& y) noexcept(
+            noexcept(x.swap(y)));
+
+    private:
+        // TODO: can we get rid of these two helpers? Probably...
+        template <typename... Args>
+        constexpr void construct_value(Args&&... args) {
+            new (std::addressof(this->_value)) T(std::forward<Args>(args)...);
+            this->_has_value = true;
+        }
+
+        template <typename... Args>
+        constexpr void construct_error(Args&&... args) {
+            new (std::addressof(this->_error))
+                unexpected<E>(std::forward<Args>(args)...);
+            this->_has_value = false;
+        }
+
+        union {
+            T _value;
+            unexpected<E> _error;
+        };
+        bool _has_value;
     };
 
     // template <typename T1, typename E1, typename T2, typename E2>

@@ -38,8 +38,8 @@ TEST_CASE("expected types") {
     static_assert(std::is_same_v<T::error_type, bool>);
     static_assert(std::is_same_v<T::unexpected_type, mtl::unexpected<bool>>);
 
-    using U = std::expected<void, bool>;
-    static_assert(std::is_void_v<U::value_type>);
+    // using U = std::expected<void, bool>;
+    // static_assert(std::is_void_v<U::value_type>);
 }
 
 TEST_CASE("rebind<>") {
@@ -57,25 +57,25 @@ TEST_CASE("expected()") {
         REQUIRE(*a == DefaultInt::DefaultValue);
     }
 
-    SECTION("void value") {
-        std::expected<void, Error> a;
-        REQUIRE(a);
-    }
+    //     SECTION("void value") {
+    //         std::expected<void, Error> a;
+    //         REQUIRE(a);
+    //     }
 
-    SECTION("const void value") {
-        std::expected<const void, Error> a;
-        REQUIRE(a);
-    }
+    //     SECTION("const void value") {
+    //         std::expected<const void, Error> a;
+    //         REQUIRE(a);
+    //     }
 
-    SECTION("volatile void value") {
-        std::expected<volatile void, Error> a;
-        REQUIRE(a);
-    }
+    //     SECTION("volatile void value") {
+    //         std::expected<volatile void, Error> a;
+    //         REQUIRE(a);
+    //     }
 
-    SECTION("const volatile void value") {
-        std::expected<const volatile void, Error> a;
-        REQUIRE(a);
-    }
+    //     SECTION("const volatile void value") {
+    //         std::expected<const volatile void, Error> a;
+    //         REQUIRE(a);
+    //     }
 }
 
 TEST_CASE("expected(const expected&)") {
@@ -88,13 +88,13 @@ TEST_CASE("expected(const expected&)") {
         REQUIRE(b);
         REQUIRE(*b == 100);
     }
-    SECTION("void value") {
-        const std::expected<void, Error> a;
-        auto b(a);
+    // SECTION("void value") {
+    //     const std::expected<void, Error> a;
+    //     auto b(a);
 
-        REQUIRE(a);
-        REQUIRE(b);
-    }
+    //     REQUIRE(a);
+    //     REQUIRE(b);
+    // }
 
     SECTION("error") {
         const std::expected<int, Error> a(
@@ -107,16 +107,16 @@ TEST_CASE("expected(const expected&)") {
         REQUIRE(b.error() == Error::FlyingSquirrels);
     }
 
-    SECTION("void error") {
-        const std::expected<void, Error> a(
-            std::unexpect, Error::FlyingSquirrels);
-        auto b(a);
+    // SECTION("void error") {
+    //     const std::expected<void, Error> a(
+    //         std::unexpect, Error::FlyingSquirrels);
+    //     auto b(a);
 
-        REQUIRE(!a);
-        REQUIRE(a.error() == Error::FlyingSquirrels);
-        REQUIRE(!b);
-        REQUIRE(b.error() == Error::FlyingSquirrels);
-    }
+    //     REQUIRE(!a);
+    //     REQUIRE(a.error() == Error::FlyingSquirrels);
+    //     REQUIRE(!b);
+    //     REQUIRE(b.error() == Error::FlyingSquirrels);
+    // }
 }
 
 TEST_CASE("expected(expected&&)") {
@@ -130,13 +130,13 @@ TEST_CASE("expected(expected&&)") {
         REQUIRE(*b == 200);
     }
 
-    SECTION("void value") {
-        std::expected<void, Error> a;
-        auto b(std::move(a));
+    // SECTION("void value") {
+    //     std::expected<void, Error> a;
+    //     auto b(std::move(a));
 
-        REQUIRE(a);
-        REQUIRE(b);
-    }
+    //     REQUIRE(a);
+    //     REQUIRE(b);
+    // }
 
     SECTION("error") {
         std::expected<int, IntMoveableValue> a(std::unexpect, 456);
@@ -148,15 +148,15 @@ TEST_CASE("expected(expected&&)") {
         REQUIRE(b.error() == 456);
     }
 
-    SECTION("void error") {
-        std::expected<void, IntMoveableValue> a(std::unexpect, 123);
-        auto b(std::move(a));
+    // SECTION("void error") {
+    //     std::expected<void, IntMoveableValue> a(std::unexpect, 123);
+    //     auto b(std::move(a));
 
-        REQUIRE(!a);
-        REQUIRE(a.error() == 0);
-        REQUIRE(!b);
-        REQUIRE(b.error() == 123);
-    }
+    //     REQUIRE(!a);
+    //     REQUIRE(a.error() == 0);
+    //     REQUIRE(!b);
+    //     REQUIRE(b.error() == 123);
+    // }
 }
 
 TEST_CASE("expected(U&& v)") {
@@ -178,11 +178,11 @@ TEST_CASE("expected(unexpect_t, Args&&...)") {
         REQUIRE(a.error() == Error::FileNotFound);
     }
 
-    SECTION("void error") {
-        std::expected<void, Error> a(std::unexpect, Error::IOError);
-        REQUIRE(!a);
-        REQUIRE(a.error() == Error::IOError);
-    }
+    // SECTION("void error") {
+    //     std::expected<void, Error> a(std::unexpect, Error::IOError);
+    //     REQUIRE(!a);
+    //     REQUIRE(a.error() == Error::IOError);
+    // }
 
     // TODO: error with extra params
     // TODO: void error with extra params
@@ -195,11 +195,11 @@ TEST_CASE("expected(const unexpected<G>&)") {
         REQUIRE(a.error() == Error::FileNotFound);
     }
 
-    SECTION("void error)") {
-        std::expected<void, Error> a((mtl::unexpected(Error::IOError)));
-        REQUIRE(!a);
-        REQUIRE(a.error() == Error::IOError);
-    }
+    // SECTION("void error)") {
+    //     std::expected<void, Error> a((mtl::unexpected(Error::IOError)));
+    //     REQUIRE(!a);
+    //     REQUIRE(a.error() == Error::IOError);
+    // }
 }
 
 TEST_CASE("~expected()") {
@@ -216,8 +216,8 @@ TEST_CASE("expected constructors", "[expected]") {
         REQUIRE(a.has_value());
         REQUIRE(*a == DefaultInt::DefaultValue);
 
-        mtl::expected<void, Error> b;
-        REQUIRE(b.has_value());
+        // mtl::expected<void, Error> b;
+        // REQUIRE(b.has_value());
     }
 
     SECTION("from value") {
@@ -242,10 +242,10 @@ TEST_CASE("expected constructors", "[expected]") {
         REQUIRE(!a.has_value());
         REQUIRE(a.error() == Error::IOError);
 
-        mtl::unexpected error2{Error::FlyingSquirrels};
-        mtl::expected<void, Error> b{error2};
-        REQUIRE(!b.has_value());
-        REQUIRE(b.error() == Error::FlyingSquirrels);
+        // mtl::unexpected error2{Error::FlyingSquirrels};
+        // mtl::expected<void, Error> b{error2};
+        // REQUIRE(!b.has_value());
+        // REQUIRE(b.error() == Error::FlyingSquirrels);
     }
 
     SECTION("from complex error") {
@@ -333,10 +333,10 @@ TEST_CASE("expected constructors", "[expected]") {
         REQUIRE(*a == 3);
         REQUIRE(*b == 3);
 
-        const mtl::expected<void, Error> c;
-        mtl::expected<void, Error> d{c};
-        REQUIRE(c.has_value());
-        REQUIRE(d.has_value());
+        // const mtl::expected<void, Error> c;
+        // mtl::expected<void, Error> d{c};
+        // REQUIRE(c.has_value());
+        // REQUIRE(d.has_value());
     }
 
     SECTION("copy - error") {
@@ -348,12 +348,11 @@ TEST_CASE("expected constructors", "[expected]") {
         REQUIRE(a.error() == Error::FileNotFound);
         REQUIRE(b.error() == Error::FileNotFound);
 
-        const mtl::expected<void, Error> c{mtl::unexpected(Error::IOError)};
-        mtl::expected<void, Error> d{c};
-        REQUIRE(!c.has_value());
-        REQUIRE(!d.has_value());
-        REQUIRE(c.error() == Error::IOError);
-        REQUIRE(d.error() == Error::IOError);
+        // const mtl::expected<void, Error>
+        // c{mtl::unexpected(Error::IOError)}; mtl::expected<void, Error>
+        // d{c}; REQUIRE(!c.has_value()); REQUIRE(!d.has_value());
+        // REQUIRE(c.error() == Error::IOError);
+        // REQUIRE(d.error() == Error::IOError);
     }
 
     SECTION("move - value") {
@@ -364,10 +363,10 @@ TEST_CASE("expected constructors", "[expected]") {
         REQUIRE(*a == 0);
         REQUIRE(*b == 4);
 
-        mtl::expected<void, Error> c;
-        const mtl::expected<void, Error> d{std::move(c)};
-        REQUIRE(c.has_value());
-        REQUIRE(d.has_value());
+        // mtl::expected<void, Error> c;
+        // const mtl::expected<void, Error> d{std::move(c)};
+        // REQUIRE(c.has_value());
+        // REQUIRE(d.has_value());
     }
 
     SECTION("move - error") {
@@ -379,13 +378,13 @@ TEST_CASE("expected constructors", "[expected]") {
         REQUIRE(a.error() == 0);
         REQUIRE(b.error() == 55);
 
-        mtl::expected<void, IntMoveableValue> c{
-            mtl::unexpected<IntMoveableValue>{66}};
-        const mtl::expected<void, IntMoveableValue> d{std::move(c)};
-        REQUIRE(!c.has_value());
-        REQUIRE(!d.has_value());
-        REQUIRE(c.error() == 0);
-        REQUIRE(d.error() == 66);
+        // mtl::expected<void, IntMoveableValue> c{
+        //     mtl::unexpected<IntMoveableValue>{66}};
+        // const mtl::expected<void, IntMoveableValue> d{std::move(c)};
+        // REQUIRE(!c.has_value());
+        // REQUIRE(!d.has_value());
+        // REQUIRE(c.error() == 0);
+        // REQUIRE(d.error() == 66);
     }
 
     SECTION("copy with conversion - value") {
@@ -396,10 +395,10 @@ TEST_CASE("expected constructors", "[expected]") {
         REQUIRE(*a == 123);
         REQUIRE(*b == 123l);
 
-        const mtl::expected<void, Error> c;
-        mtl::expected<void, Error> d{c};
-        REQUIRE(c.has_value());
-        REQUIRE(d.has_value());
+        // const mtl::expected<void, Error> c;
+        // mtl::expected<void, Error> d{c};
+        // REQUIRE(c.has_value());
+        // REQUIRE(d.has_value());
     }
 
     SECTION("copy with conversion - error") {
@@ -410,12 +409,12 @@ TEST_CASE("expected constructors", "[expected]") {
         REQUIRE(a.error() == 456);
         REQUIRE(b.error() == 456l);
 
-        const mtl::expected<void, IntValue> c{mtl::unexpected(789)};
-        mtl::expected<void, LongValue> d{c};
-        REQUIRE(!c.has_value());
-        REQUIRE(!d.has_value());
-        REQUIRE(c.error() == 789);
-        REQUIRE(d.error() == 789l);
+        // const mtl::expected<void, IntValue> c{mtl::unexpected(789)};
+        // mtl::expected<void, LongValue> d{c};
+        // REQUIRE(!c.has_value());
+        // REQUIRE(!d.has_value());
+        // REQUIRE(c.error() == 789);
+        // REQUIRE(d.error() == 789l);
     }
 
     SECTION("move with conversion - value") {
@@ -426,10 +425,10 @@ TEST_CASE("expected constructors", "[expected]") {
         REQUIRE(*a == 0);
         REQUIRE(*b == 69l);
 
-        mtl::expected<void, IntMoveableValue> c;
-        mtl::expected<void, LongMoveableValue> d{std::move(c)};
-        REQUIRE(c.has_value());
-        REQUIRE(d.has_value());
+        // mtl::expected<void, IntMoveableValue> c;
+        // mtl::expected<void, LongMoveableValue> d{std::move(c)};
+        // REQUIRE(c.has_value());
+        // REQUIRE(d.has_value());
     }
 
     SECTION("move with conversion - error") {
@@ -441,12 +440,12 @@ TEST_CASE("expected constructors", "[expected]") {
         REQUIRE(a.error() == 0);
         REQUIRE(b.error() == 456l);
 
-        mtl::expected<void, IntMoveableValue> c{mtl::unexpected(789)};
-        mtl::expected<void, LongMoveableValue> d{std::move(c)};
-        REQUIRE(!c.has_value());
-        REQUIRE(!d.has_value());
-        REQUIRE(c.error() == 0);
-        REQUIRE(d.error() == 789l);
+        // mtl::expected<void, IntMoveableValue> c{mtl::unexpected(789)};
+        // mtl::expected<void, LongMoveableValue> d{std::move(c)};
+        // REQUIRE(!c.has_value());
+        // REQUIRE(!d.has_value());
+        // REQUIRE(c.error() == 0);
+        // REQUIRE(d.error() == 789l);
     }
 }
 

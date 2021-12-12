@@ -1,3 +1,5 @@
+#DisableFormat: true
+
 BasedOnStyle: LLVM
 SortIncludes: false
 
