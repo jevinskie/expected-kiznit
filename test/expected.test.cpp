@@ -79,6 +79,42 @@ TEST_CASE("Default constructor") {
     }
 }
 
+TEST_CASE("Copy constructor") {
+    SECTION("T and E are copy-constructible") {
+        using Type = std::expected<CopyConstructible, CopyConstructible>;
+        static_assert(std::is_copy_constructible_v<Type>);
+        const Type a(42);
+        const Type b(a);
+
+        REQUIRE(b);
+        REQUIRE(b->value == 42);
+
+        // TODO: test with error
+    }
+
+    SECTION("T is void and E is copy-constructible") {
+        using Type = std::expected<void, CopyConstructible>;
+        static_assert(std::is_copy_constructible_v<Type>);
+        const Type a;
+        const Type b(a);
+
+        REQUIRE(b);
+
+        // TODO: test with error
+    }
+
+    SECTION("T or E is not copy-constructible") {
+        using Type1 = std::expected<NotCopyConstructible, CopyConstructible>;
+        using Type2 = std::expected<CopyConstructible, NotCopyConstructible>;
+        using Type3 = std::expected<NotCopyConstructible, NotCopyConstructible>;
+        using Type4 = std::expected<void, NotCopyConstructible>;
+        static_assert(!std::is_copy_constructible_v<Type1>);
+        static_assert(!std::is_copy_constructible_v<Type2>);
+        static_assert(!std::is_copy_constructible_v<Type3>);
+        static_assert(!std::is_copy_constructible_v<Type4>);
+    }
+}
+
 // TEST_CASE("expected(const expected&)") {
 //     // SECTION("value") {
 //     //     const std::expected<IntValue, Error> a(100);

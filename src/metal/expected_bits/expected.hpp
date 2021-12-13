@@ -28,7 +28,7 @@
 #pragma once
 
 #include <metal/expected_bits/exception.hpp>
-#include <metal/expected_bits/unexpected.hpp>
+#include <metal/expected_bits/expected_storage.hpp>
 
 namespace mtl {
 
@@ -40,7 +40,9 @@ namespace mtl {
 
     // �.�.4 Class template expected [expected.expected]
     template <typename T, typename E>
-    requires(!std::is_same_v<T, unexpected<E>>) class expected {
+    requires(!std::is_same_v<T, unexpected<E>>) class expected
+        : private detail::expected_storage<T, E>,
+          private detail::MaybeDeleteCopyConstructor<T, E> {
     public:
         using value_type = T;
         using error_type = E;
@@ -50,39 +52,107 @@ namespace mtl {
         using rebind = expected<U, error_type>;
 
         // �.�.4.1, constructors
-        template <typename = void>
-        requires(std::is_default_constructible_v<T>) constexpr expected()
-            : _value(), _has_value(true) {}
+        constexpr expected() = default;
+        constexpr expected(const expected& rhs) = default;
+
+        // TODO: revise implementation, write unit tests. I needed this
+        // constructor to write unit tests. Note: this constructor doesn't exist
+        // for the void specialization. This is expected (lol).
+        // TODO: test with non-moveable value type and test with moveable value
+        // type.
+        template <typename U = T>
+        requires(std::is_constructible_v<T, U&&> &&
+                 !std::is_same_v<std::remove_cvref_t<U>, in_place_t> &&
+                 !std::is_same_v<std::remove_cvref_t<U>, expected<T, E>> &&
+                 !std::is_same_v<std::remove_cvref_t<U>,
+                     unexpected<E>>) explicit(!std::is_convertible_v<U&&,
+                                              T>) constexpr expected(U&& v)
+            : detail::expected_storage<T, E>(std::forward<U>(v)) {}
 
         //  �.�.4.2 Destructor [expected.object.dtor]
-        ~expected() {
-            if (_has_value) {
-                _value.~T();
-            } else {
-                _error.~unexpected<E>();
-            }
-        }
+        ~expected() = default;
 
         // �.�.4.5 Observers [expected.object.observe]
-        constexpr const T* operator->() const { return std::addressof(_value); }
-        constexpr T* operator->() { return std::addressof(_value); }
-        constexpr const auto& operator*() const& { return _value; }
-        constexpr auto& operator*() & { return _value; }
-        constexpr const auto&& operator*() const&& { return std::move(_value); }
-        constexpr auto&& operator*() && { return std::move(_value); }
-        constexpr explicit operator bool() const noexcept { return _has_value; }
-        constexpr bool has_value() const noexcept { return _has_value; }
+        constexpr const T* operator->() const {
+            return std::addressof(this->_value);
+        }
+        constexpr T* operator->() { return std::addressof(this->_value); }
+        constexpr const auto& operator*() const& { return this->_value; }
+        constexpr auto& operator*() & { return this->_value; }
+        constexpr const auto&& operator*() const&& {
+            return std::move(this->_value);
+        }
+        constexpr auto&& operator*() && { return std::move(this->_value); }
+        constexpr explicit operator bool() const noexcept {
+            return this->_has_value;
+        }
+        constexpr bool has_value() const noexcept { return this->_has_value; }
 
-    private:
-        union {
-            value_type _value;
-            unexpected_type _error;
-        };
-        bool _has_value;
+        // TODO: unit tests for value()
+        constexpr const T& value() const& {
+#if MTL_EXCEPTIONS
+            if (!*this)
+                throw bad_expected_access(error());
+#endif
+            return this->_value;
+        }
+
+        constexpr T& value() & {
+#if MTL_EXCEPTIONS
+            if (!*this)
+                throw bad_expected_access(error());
+#endif
+            return this->_value;
+        }
+
+        constexpr const T&& value() const&& {
+#if MTL_EXCEPTIONS
+            if (!*this)
+                throw bad_expected_access(error());
+#endif
+            return std::move(this->_value);
+        }
+
+        constexpr T&& value() && {
+#if MTL_EXCEPTIONS
+            if (!*this)
+                throw bad_expected_access(error());
+#endif
+            return std::move(this->_value);
+        }
+
+        constexpr const E& error() const& { return this->_error.value(); }
+
+        constexpr E& error() & { return this->_error.value(); }
+
+        constexpr const E&& error() const&& {
+            return std::move(this->_error.value());
+        }
+
+        constexpr E&& error() && { return std::move(this->_error.value()); }
+
+        // TODO: unit tests for value_or()
+        template <typename U>
+        requires(std::is_copy_constructible_v<T>&&
+                std::is_convertible_v<U&&, T>) constexpr T
+            value_or(U&& value) const& {
+            return bool(*this) ? **this
+                               : static_cast<T>(std::forward<U>(value));
+        }
+
+        template <typename U>
+        requires(std::is_move_constructible_v<T>&&
+                std::is_convertible_v<U&&, T>) constexpr T
+            value_or(U&& value) && {
+            return bool(*this) ? std::move(**this)
+                               : static_cast<T>(std::forward<U>(value));
+        }
     };
 
     template <typename E>
-    class expected<void, E> {
+    class expected<void, E>
+        : private detail::expected_storage<void, E>,
+          private detail::MaybeDeleteCopyConstructor<void, E> {
     public:
         using value_type = void;
         using error_type = E;
@@ -92,39 +162,28 @@ namespace mtl {
         using rebind = expected<U, error_type>;
 
         // �.�.4.1, constructors
-        template <typename = void>
-        constexpr expected() : _has_value(true) {}
+        constexpr expected() = default;
+        constexpr expected(const expected& rhs) = default;
 
         //  �.�.4.2 Destructor [expected.object.dtor]
-        ~expected() {
-            if (!_has_value) {
-                _error.~unexpected_type();
-            }
-        }
+        ~expected() = default;
 
         // �.�.4.5 Observers [expected.object.observe]
-        constexpr explicit operator bool() const noexcept { return _has_value; }
-        constexpr bool has_value() const noexcept { return _has_value; }
+        constexpr explicit operator bool() const noexcept {
+            return this->_has_value;
+        }
+        constexpr bool has_value() const noexcept { return this->_has_value; }
 
-    private:
-        union {
-            unexpected_type _error;
-        };
-        bool _has_value;
+        constexpr const E& error() const& { return this->_error.value(); }
+
+        constexpr E& error() & { return this->_error.value(); }
+
+        constexpr const E&& error() const&& {
+            return std::move(this->_error.value());
+        }
+
+        constexpr E&& error() && { return std::move(this->_error.value()); }
     };
-
-    //         template <typename = void>
-    //         requires((std::is_copy_constructible_v<T> ||
-    //                   std::is_same_v<std::remove_cvref_t<T>,
-    //                       void>)&&std::is_copy_constructible_v<E>
-
-    //             ) constexpr expected(const expected& rhs) {
-    //             if (bool(*this)) {
-    //                 construct_value(*this);
-    //             } else {
-    //                 construct_error(rhs.error());
-    //             }
-    //         }
 
     //         template <typename = void>
     //         requires(std::is_move_constructible_v<T>&&
@@ -487,101 +546,6 @@ namespace mtl {
     //         // std::is_nothrow_move_constructible_v<E>&&
     //         //                         std::is_nothrow_swappable_v<E>) {
     //         //             base::swap(other);
-    //         //         }
-
-    //         // �.�.4.5 Observers [expected.object.observe]
-
-    //         //         template <class U = T,
-    //         //                   std::enable_if_t<!std::is_void_v<U>>*
-    //         //                   =
-    //         //                       nullptr>
-    //         //         constexpr const U& value() const& {
-    //         // #if MTL_EXCEPTIONS
-    //         //             if (!*this)
-    //         //                 throw bad_expected_access(error());
-    //         // #endif
-    //         //             return base::_value;
-    //         //         }
-
-    //         //         template <class U = T,
-    //         //                   std::enable_if_t<!std::is_void_v<U>>*
-    //         //                   =
-    //         //                       nullptr>
-    //         //         constexpr U& value() & {
-    //         // #if MTL_EXCEPTIONS
-    //         //             if (!*this)
-    //         //                 throw bad_expected_access(error());
-    //         // #endif
-    //         //             return base::_value;
-    //         //         }
-
-    //         //         template <class U = T,
-    //         //                   std::enable_if_t<!std::is_void_v<U>>*
-    //         //                   =
-    //         //                       nullptr>
-    //         //         constexpr const U&& value() const&& {
-    //         // #if MTL_EXCEPTIONS
-    //         //             if (!*this)
-    //         //                 throw bad_expected_access(error());
-    //         // #endif
-    //         //             return std::move(base::_value);
-    //         //         }
-
-    //         //         template <class U = T,
-    //         //                   std::enable_if_t<!std::is_void_v<U>>*
-    //         //                   =
-    //         //                       nullptr>
-    //         //         constexpr U&& value() && {
-    //         // #if MTL_EXCEPTIONS
-    //         //             if (!*this)
-    //         //                 throw bad_expected_access(error());
-    //         // #endif
-    //         //             return std::move(base::_value);
-    //         //         }
-
-    //         constexpr const E& error() const& { return
-    //         _error.value();
-    //         }
-
-    //         constexpr E& error() & { return _error.value(); }
-
-    //         constexpr const E&& error() const&& {
-    //             return std::move(_error.value());
-    //         }
-
-    //         constexpr E&& error() && { return
-    //         std::move(_error.value()); }
-
-    //         //         template <typename U> constexpr T value_or(U&&
-    //         value)
-    //         //         const&
-    //         //         {
-    //         //             static_assert(
-    //         //                 std::is_copy_constructible_v<T> &&
-    //         //                     std::is_convertible_v<U&&, T>,
-    //         //                 "T must be copy-constructible and
-    //         convertible
-    //         //                 from U&&");
-
-    //         //             return bool(*this) ? **this
-    //         //                                :
-    //         // static_cast<T>(std::forward<U>(value));
-    //         //         }
-
-    //         //         template <typename U> constexpr T value_or(U&&
-    //         value)
-    //         &&
-    //         //         {
-    //         //             static_assert(
-    //         //                 std::is_move_constructible_v<T> &&
-    //         //                     std::is_convertible_v<U&&, T>,
-    //         //                 "T must be move-constructible and
-    //         convertible
-    //         //                 from U&&");
-
-    //         //             return bool(*this) ? std::move(**this)
-    //         //                                :
-    //         // static_cast<T>(std::forward<U>(value));
     //         //         }
 
     //         // �.�.4.7, Expected equality operators

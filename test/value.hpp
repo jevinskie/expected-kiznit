@@ -32,21 +32,29 @@
 
 struct DefaultConstructible {
     constexpr static int DefaultValue = -100;
-
     DefaultConstructible() : value(DefaultValue) {}
-
     int value;
 };
-
 static_assert(std::is_default_constructible_v<DefaultConstructible>);
 
 struct NotDefaultConstructible {
     NotDefaultConstructible(int x) : value(x) {}
-
     int value;
 };
-
 static_assert(!std::is_default_constructible_v<NotDefaultConstructible>);
+
+struct CopyConstructible {
+    CopyConstructible(int x) : value(x) {}
+    int value;
+};
+static_assert(std::is_copy_constructible_v<CopyConstructible>);
+
+struct NotCopyConstructible {
+    NotCopyConstructible(int x) : value(x) {}
+    NotCopyConstructible(const NotCopyConstructible&) = delete;
+    int value;
+};
+static_assert(!std::is_copy_constructible_v<NotCopyConstructible>);
 
 // TODO: get rid of all types below, this will require updating std::unexpected
 // tests.
