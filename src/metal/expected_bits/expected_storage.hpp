@@ -30,6 +30,10 @@
 #include <metal/expected_bits/unexpected.hpp>
 
 namespace mtl {
+
+    template <typename T, typename E>
+    requires(!std::is_same_v<T, unexpected<E>>) class expected;
+
     namespace detail {
 
         // expected_storage
@@ -65,6 +69,15 @@ namespace mtl {
             template <typename U = T>
             constexpr expected_storage(U&& v) {
                 construct_value(std::forward<U>(v));
+            }
+
+            template <typename U, typename G>
+            expected_storage(const expected<U, G>& rhs) {
+                if (bool(rhs)) {
+                    construct_value(*rhs);
+                } else {
+                    construct_error(rhs.error());
+                }
             }
 
             ~expected_storage() {

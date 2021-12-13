@@ -53,7 +53,7 @@ namespace mtl {
 
         // �.�.4.1 Constructors [expected.object.ctor]
         constexpr expected() = default;
-        constexpr expected(const expected& rhs) = default;
+        constexpr expected(const expected& rhs) = default; // TODO: noexcept()?
         constexpr expected(expected&& rhs) noexcept(
             (std::is_void_v<T> ||
                 std::is_nothrow_move_constructible_v<
@@ -73,43 +73,33 @@ namespace mtl {
                                               T>) constexpr expected(U&& v)
             : detail::expected_storage<T, E>(std::forward<U>(v)) {}
 
-        //         template <typename U, typename G>
-        //         requires(
-        //             std::is_constructible_v<T, const U&> &&
-        //             !std::is_constructible_v<T, expected<U, G>&> &&
-        //             !std::is_constructible_v<T, expected<U, G>&&> &&
-        //             !std::is_constructible_v<T, const expected<U, G>&> &&
-        //             !std::is_constructible_v<T, const expected<U, G>&&> &&
-        //             !std::is_convertible_v<expected<U, G>&, T> &&
-        //             !std::is_convertible_v<expected<U, G>&&, T> &&
-        //             !std::is_convertible_v<const expected<U, G>&, T> &&
-        //             !std::is_convertible_v<const expected<U, G>&&, T> &&
-        //             std::is_constructible_v<E, const G&> &&
-        //             !std::is_constructible_v<unexpected<E>, expected<U, G>&>
-        //             && !std::is_constructible_v<unexpected<E>, expected<U,
-        //             G>&&> && !std::is_constructible_v<unexpected<E>, const
-        //             expected<U, G>&> &&
-        //             !std::is_constructible_v<unexpected<E>, const expected<U,
-        //             G>&&> && !std::is_convertible_v<expected<U, G>&,
-        //             unexpected<E>> && !std::is_convertible_v<expected<U,
-        //             G>&&, unexpected<E>> && !std::is_convertible_v<const
-        //             expected<U, G>&, unexpected<E>> &&
-        //             !std::is_convertible_v<const expected<U, G>&&,
-        //                 unexpected<
-        //                     E>>) explicit((!std::is_void_v<T> &&
-        //                     !std::is_void_v<U> &&
-        //                                       !std::is_convertible_v<const
-        //                                       U&, T>) ||
-        //                                   !std::is_convertible_v<const G&,
-        //                                       E>) constexpr expected(const
-        //                                       expected<U,
-        //             G>& rhs) {
-        //             if (bool(rhs)) {
-        //                 construct_value(*rhs);
-        //             } else {
-        //                 construct_error(rhs.error());
-        //             }
-        //         }
+        template <typename U, typename G>
+        requires(
+            std::is_constructible_v<T, const U&> &&
+            !std::is_constructible_v<T, expected<U, G>&> &&
+            !std::is_constructible_v<T, expected<U, G>&&> &&
+            !std::is_constructible_v<T, const expected<U, G>&> &&
+            !std::is_constructible_v<T, const expected<U, G>&&> &&
+            !std::is_convertible_v<expected<U, G>&, T> &&
+            !std::is_convertible_v<expected<U, G>&&, T> &&
+            !std::is_convertible_v<const expected<U, G>&, T> &&
+            !std::is_convertible_v<const expected<U, G>&&, T> &&
+            std::is_constructible_v<E, const G&> &&
+            !std::is_constructible_v<unexpected<E>, expected<U, G>&> &&
+            !std::is_constructible_v<unexpected<E>, expected<U, G>&&> &&
+            !std::is_constructible_v<unexpected<E>, const expected<U, G>&> &&
+            !std::is_constructible_v<unexpected<E>, const expected<U, G>&&> &&
+            !std::is_convertible_v<expected<U, G>&, unexpected<E>> &&
+            !std::is_convertible_v<expected<U, G>&&, unexpected<E>> &&
+            !std::is_convertible_v<const expected<U, G>&, unexpected<E>> &&
+            !std::is_convertible_v<const expected<U, G>&&,
+                unexpected<
+                    E>>) explicit((!std::is_void_v<T> && !std::is_void_v<U> &&
+                                      !std::is_convertible_v<const U&, T>) ||
+                                  !std::is_convertible_v<const G&,
+                                      E>) constexpr expected(const expected<U,
+            G>& rhs)
+            : detail::expected_storage<T, E>(rhs) {}
 
         //         template <typename G>
         //         requires(std::is_void_v<T>) explicit(

@@ -153,56 +153,24 @@ TEST_CASE("Move constructor") {
     }
 }
 
-// TEST_CASE("expected(U&& v)") {
-//     SECTION("same type") {
-//         std::expected<short, Error> a(short(42));
-//         REQUIRE(*a == 42);
-//     }
+// TODO: expected(U&& v);
 
-//     SECTION("different type") {
-//         std::expected<short, Error> a(char(43));
-//         REQUIRE(*a == 43);
-//     }
-// }
+TEST_CASE("Conversion constructor") {
+    SECTION("Convert T to U") {
+        using Type1 = std::expected<int, Error>;
+        using Type2 = std::expected<long, Error>;
 
-// TEST_CASE("expected(unexpect_t, Args&&...)") {
-//     SECTION("error") {
-//         std::expected<int, Error> a(std::unexpect, Error::FileNotFound);
-//         REQUIRE(!a);
-//         REQUIRE(a.error() == Error::FileNotFound);
-//     }
+        const Type1 a(99);
+        const Type2 b(a);
 
-//     // SECTION("void error") {
-//     //     std::expected<void, Error> a(std::unexpect, Error::IOError);
-//     //     REQUIRE(!a);
-//     //     REQUIRE(a.error() == Error::IOError);
-//     // }
+        REQUIRE(b);
+        REQUIRE(*b == 99);
+    }
 
-//     // TODO: error with extra params
-//     // TODO: void error with extra params
-// }
+    // TODO: convert E to G
 
-// TEST_CASE("expected(const unexpected<G>&)") {
-//     SECTION("error") {
-//         std::expected<int, Error>
-//         a((mtl::unexpected(Error::FileNotFound))); REQUIRE(!a);
-//         REQUIRE(a.error() == Error::FileNotFound);
-//     }
-
-//     // SECTION("void error)") {
-//     //     std::expected<void, Error>
-//     a((mtl::unexpected(Error::IOError)));
-//     //     REQUIRE(!a);
-//     //     REQUIRE(a.error() == Error::IOError);
-//     // }
-// }
-
-// TEST_CASE("~expected()") {
-//     // TODO: with value
-//     // TODO: with void value
-//     // TODO: with error
-//     // TODO: with void error
-// }
+    // TODO: void E to G
+}
 
 // TEST_CASE("expected constructors", "[expected]") {
 
