@@ -41,12 +41,24 @@ namespace mtl {
                 std::is_default_constructible_v<T>) constexpr expected_storage()
                 : _value(), _has_value(true) {}
 
-            // TODO: needs to be disabled if something is not constructible
             constexpr expected_storage(const expected_storage& rhs) {
                 if (rhs._has_value) {
                     construct_value(rhs._value);
                 } else {
                     construct_error(rhs._error.value());
+                }
+            }
+
+            // TODO: disable if not satisfied:
+            // std::is_move_constructible_v<T>&&
+            // std::is_move_constructible_v<E>)
+            constexpr expected_storage(expected_storage&& rhs) noexcept(
+                std::is_nothrow_move_constructible_v<T>&&
+                    std::is_nothrow_move_constructible_v<E>) {
+                if (rhs._has_value) {
+                    construct_value(std::move(rhs._value));
+                } else {
+                    construct_error(std::move(rhs._error.value()));
                 }
             }
 
@@ -88,7 +100,6 @@ namespace mtl {
 
             constexpr expected_storage() : _has_value(true) {}
 
-            // TODO: needs to be disabled if something is not constructible
             constexpr expected_storage(const expected_storage& rhs) {
                 if (rhs._has_value) {
                     construct_value();
@@ -97,6 +108,14 @@ namespace mtl {
                 }
             }
 
+            constexpr expected_storage(expected_storage&& rhs) noexcept(
+                std::is_nothrow_move_constructible_v<E>) {
+                if (rhs._has_value) {
+                    construct_value();
+                } else {
+                    construct_error(std::move(rhs._error.value()));
+                }
+            }
             ~expected_storage() {
                 if (!_has_value) {
                     _error.~unexpected<E>();
@@ -118,18 +137,64 @@ namespace mtl {
             bool _has_value;
         };
 
-        // expected_copy_constructor is used to delete the default copy
-        // constructor when T or E is not copy-constructible.
+        // expected_default_constructors is used to delete the default copy
+        // and move constructors when they are not available.
         template <typename T, typename E,
-            bool HasCopyConstructor =
+            bool enable_copy_constructor =
                 (std::is_void_v<T> || std::is_copy_constructible_v<
-                                          T>)&&std::is_copy_constructible_v<E>>
-        struct expected_copy_constructor {};
+                                          T>)&&std::is_copy_constructible_v<E>,
+            bool enable_move_constructor =
+                (std::is_void_v<T> || std::is_move_constructible_v<
+                                          T>)&&std::is_move_constructible_v<E>>
+        struct expected_default_constructors {
+            expected_default_constructors() = default;
+            expected_default_constructors(
+                const expected_default_constructors&) = default;
+            expected_default_constructors(
+                expected_default_constructors&&) = default;
+            // expected_default_constructors& operator=(
+            //     const expected_default_constructors&) = default;
+            // expected_default_constructors& operator=(
+            //     expected_default_constructors&&) noexcept = default;
+        };
 
         template <typename T, typename E>
-        struct expected_copy_constructor<T, E, false> {
-            expected_copy_constructor(
-                const expected_copy_constructor&) = delete;
+        struct expected_default_constructors<T, E, false, true> {
+            expected_default_constructors() = default;
+            expected_default_constructors(
+                const expected_default_constructors&) = delete;
+            expected_default_constructors(
+                expected_default_constructors&&) = default;
+            // expected_default_constructors& operator=(
+            //     const expected_default_constructors&) = default;
+            // expected_default_constructors& operator=(
+            //     expected_default_constructors&&) noexcept = default;
+        };
+
+        template <typename T, typename E>
+        struct expected_default_constructors<T, E, true, false> {
+            expected_default_constructors() = default;
+            expected_default_constructors(
+                const expected_default_constructors&) = default;
+            expected_default_constructors(
+                expected_default_constructors&&) = delete;
+            // expected_default_constructors& operator=(
+            //     const expected_default_constructors&) = default;
+            // expected_default_constructors& operator=(
+            //     expected_default_constructors&&) noexcept = default;
+        };
+
+        template <typename T, typename E>
+        struct expected_default_constructors<T, E, false, false> {
+            expected_default_constructors() = default;
+            expected_default_constructors(
+                const expected_default_constructors&) = delete;
+            expected_default_constructors(
+                expected_default_constructors&&) = delete;
+            // expected_default_constructors& operator=(
+            //     const expected_default_constructors&) = default;
+            // expected_default_constructors& operator=(
+            //     expected_default_constructors&&) noexcept = default;
         };
 
     } // namespace detail

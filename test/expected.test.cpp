@@ -53,6 +53,8 @@ TEST_CASE("rebind<>") {
     static_assert(std::is_same_v<W::error_type, bool>);
 }
 
+// TODO: tests with const/volatile/cv T and E
+
 TEST_CASE("Default constructor") {
     SECTION("T is default-constructible") {
         using Type = std::expected<DefaultConstructible, Error>;
@@ -88,9 +90,9 @@ TEST_CASE("Copy constructor") {
 
         REQUIRE(b);
         REQUIRE(b->value == 42);
-
-        // TODO: test with error
     }
+
+    // TODO: test with error
 
     SECTION("T is void and E is copy-constructible") {
         using Type = std::expected<void, CopyConstructible>;
@@ -99,9 +101,9 @@ TEST_CASE("Copy constructor") {
         const Type b(a);
 
         REQUIRE(b);
-
-        // TODO: test with error
     }
+
+    // TODO: test with error
 
     SECTION("T or E is not copy-constructible") {
         using Type1 = std::expected<NotCopyConstructible, CopyConstructible>;
@@ -115,86 +117,41 @@ TEST_CASE("Copy constructor") {
     }
 }
 
-// TEST_CASE("expected(const expected&)") {
-//     // SECTION("value") {
-//     //     const std::expected<IntValue, Error> a(100);
-//     //     auto b(a);
+TEST_CASE("Move constructor") {
+    SECTION("T and E are move-constructible") {
+        using Type = std::expected<MoveConstructible, MoveConstructible>;
+        static_assert(std::is_move_constructible_v<Type>);
+        Type a(42);
+        const Type b(std::move(a));
 
-//     //     REQUIRE(a);
-//     //     REQUIRE(*a == 100);
-//     //     REQUIRE(b);
-//     //     REQUIRE(*b == 100);
-//     // }
-//     // SECTION("void value") {
-//     //     const std::expected<void, Error> a;
-//     //     auto b(a);
+        REQUIRE(b);
+        REQUIRE(b->value == 42);
+    }
 
-//     //     REQUIRE(a);
-//     //     REQUIRE(b);
-//     // }
+    // TODO: test with error
 
-//     // SECTION("error") {
-//     //     const std::expected<int, Error> a(
-//     //         std::unexpect, Error::FlyingSquirrels);
-//     //     auto b(a);
+    SECTION("T is void and E is move-constructible") {
+        using Type = std::expected<void, MoveConstructible>;
+        static_assert(std::is_move_constructible_v<Type>);
+        Type a;
+        const Type b(std::move(a));
 
-//     //     REQUIRE(!a);
-//     //     REQUIRE(a.error() == Error::FlyingSquirrels);
-//     //     REQUIRE(!b);
-//     //     REQUIRE(b.error() == Error::FlyingSquirrels);
-//     // }
+        REQUIRE(b);
+    }
 
-//     // SECTION("void error") {
-//     //     const std::expected<void, Error> a(
-//     //         std::unexpect, Error::FlyingSquirrels);
-//     //     auto b(a);
+    // TODO: test with error
 
-//     //     REQUIRE(!a);
-//     //     REQUIRE(a.error() == Error::FlyingSquirrels);
-//     //     REQUIRE(!b);
-//     //     REQUIRE(b.error() == Error::FlyingSquirrels);
-//     // }
-// }
-
-// TEST_CASE("expected(expected&&)") {
-//     SECTION("value") {
-//         std::expected<IntMoveableValue, Error> a(200);
-//         auto b(std::move(a));
-
-//         REQUIRE(a);
-//         REQUIRE(*a == 0);
-//         REQUIRE(b);
-//         REQUIRE(*b == 200);
-//     }
-
-//     // SECTION("void value") {
-//     //     std::expected<void, Error> a;
-//     //     auto b(std::move(a));
-
-//     //     REQUIRE(a);
-//     //     REQUIRE(b);
-//     // }
-
-//     SECTION("error") {
-//         std::expected<int, IntMoveableValue> a(std::unexpect, 456);
-//         auto b(std::move(a));
-
-//         REQUIRE(!a);
-//         REQUIRE(a.error() == 0);
-//         REQUIRE(!b);
-//         REQUIRE(b.error() == 456);
-//     }
-
-//     // SECTION("void error") {
-//     //     std::expected<void, IntMoveableValue> a(std::unexpect, 123);
-//     //     auto b(std::move(a));
-
-//     //     REQUIRE(!a);
-//     //     REQUIRE(a.error() == 0);
-//     //     REQUIRE(!b);
-//     //     REQUIRE(b.error() == 123);
-//     // }
-// }
+    SECTION("T or E is not move-constructible") {
+        using Type1 = std::expected<NotMoveConstructible, MoveConstructible>;
+        using Type2 = std::expected<MoveConstructible, NotMoveConstructible>;
+        using Type3 = std::expected<NotMoveConstructible, NotMoveConstructible>;
+        using Type4 = std::expected<void, NotMoveConstructible>;
+        static_assert(!std::is_move_constructible_v<Type1>);
+        static_assert(!std::is_move_constructible_v<Type2>);
+        static_assert(!std::is_move_constructible_v<Type3>);
+        static_assert(!std::is_move_constructible_v<Type4>);
+    }
+}
 
 // TEST_CASE("expected(U&& v)") {
 //     SECTION("same type") {

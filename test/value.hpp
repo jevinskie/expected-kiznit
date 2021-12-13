@@ -56,6 +56,23 @@ struct NotCopyConstructible {
 };
 static_assert(!std::is_copy_constructible_v<NotCopyConstructible>);
 
+struct MoveConstructible {
+    MoveConstructible(int x) : value(x) {}
+    MoveConstructible(MoveConstructible&& rhs) {
+        value = rhs.value;
+        rhs.value = -1;
+    }
+    int value;
+};
+static_assert(std::is_move_constructible_v<MoveConstructible>);
+
+struct NotMoveConstructible {
+    NotMoveConstructible(int x) : value(x) {}
+    NotMoveConstructible(NotMoveConstructible&& rhs) = delete;
+    int value;
+};
+static_assert(!std::is_move_constructible_v<NotMoveConstructible>);
+
 // TODO: get rid of all types below, this will require updating std::unexpected
 // tests.
 namespace oldtests {

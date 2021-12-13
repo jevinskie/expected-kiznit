@@ -42,7 +42,7 @@ namespace mtl {
     template <typename T, typename E>
     requires(!std::is_same_v<T, unexpected<E>>) class expected
         : private detail::expected_storage<T, E>,
-          private detail::expected_copy_constructor<T, E> {
+          private detail::expected_default_constructors<T, E> {
     public:
         using value_type = T;
         using error_type = E;
@@ -51,9 +51,13 @@ namespace mtl {
         template <typename U>
         using rebind = expected<U, error_type>;
 
-        // �.�.4.1, constructors
+        // �.�.4.1 Constructors [expected.object.ctor]
         constexpr expected() = default;
         constexpr expected(const expected& rhs) = default;
+        constexpr expected(expected&& rhs) noexcept(
+            (std::is_void_v<T> ||
+                std::is_nothrow_move_constructible_v<
+                    T>)&&std::is_nothrow_move_constructible_v<E>) = default;
 
         // TODO: revise implementation, write unit tests. I needed this
         // constructor to write unit tests. Note: this constructor doesn't exist
@@ -68,118 +72,6 @@ namespace mtl {
                      unexpected<E>>) explicit(!std::is_convertible_v<U&&,
                                               T>) constexpr expected(U&& v)
             : detail::expected_storage<T, E>(std::forward<U>(v)) {}
-
-        //  �.�.4.2 Destructor [expected.object.dtor]
-        ~expected() = default;
-
-        // �.�.4.5 Observers [expected.object.observe]
-        constexpr const T* operator->() const {
-            return std::addressof(this->_value);
-        }
-        constexpr T* operator->() { return std::addressof(this->_value); }
-        constexpr const auto& operator*() const& { return this->_value; }
-        constexpr auto& operator*() & { return this->_value; }
-        constexpr const auto&& operator*() const&& {
-            return std::move(this->_value);
-        }
-        constexpr auto&& operator*() && { return std::move(this->_value); }
-        constexpr explicit operator bool() const noexcept {
-            return this->_has_value;
-        }
-        constexpr bool has_value() const noexcept { return this->_has_value; }
-
-        // TODO: unit tests for value()
-        template <typename U = T>
-        requires(!std::is_void_v<T> &&
-                 std::is_same_v<T, U>) constexpr const U& value() const& {
-#if MTL_EXCEPTIONS
-            if (!*this)
-                throw bad_expected_access(error());
-#endif
-            return this->_value;
-        }
-
-        template <typename U = T>
-        requires(
-            !std::is_void_v<T> && std::is_same_v<T, U>) constexpr U& value() & {
-#if MTL_EXCEPTIONS
-            if (!*this)
-                throw bad_expected_access(error());
-#endif
-            return this->_value;
-        }
-
-        template <typename U = T>
-        requires(!std::is_void_v<T> &&
-                 std::is_same_v<T, U>) constexpr const U&& value() const&& {
-#if MTL_EXCEPTIONS
-            if (!*this)
-                throw bad_expected_access(error());
-#endif
-            return std::move(this->_value);
-        }
-
-        template <typename U = T>
-        requires(!std::is_void_v<T> &&
-                 std::is_same_v<T, U>) constexpr U&& value() && {
-#if MTL_EXCEPTIONS
-            if (!*this)
-                throw bad_expected_access(error());
-#endif
-            return std::move(this->_value);
-        }
-
-        constexpr const E& error() const& { return this->_error.value(); }
-
-        constexpr E& error() & { return this->_error.value(); }
-
-        constexpr const E&& error() const&& {
-            return std::move(this->_error.value());
-        }
-
-        constexpr E&& error() && { return std::move(this->_error.value()); }
-
-        // TODO: unit tests for value_or()
-        template <typename U>
-        requires(std::is_copy_constructible_v<T>&&
-                std::is_convertible_v<U&&, T>) constexpr T
-            value_or(U&& value) const& {
-            return bool(*this) ? **this
-                               : static_cast<T>(std::forward<U>(value));
-        }
-
-        template <typename U>
-        requires(std::is_move_constructible_v<T>&&
-                std::is_convertible_v<U&&, T>) constexpr T
-            value_or(U&& value) && {
-            return bool(*this) ? std::move(**this)
-                               : static_cast<T>(std::forward<U>(value));
-        }
-
-        //         template <typename = void>
-        //         requires(std::is_move_constructible_v<T>&&
-        //                 std::is_move_constructible_v<E>) constexpr
-        //                 expected(expected&& rhs)
-        //                 noexcept(std::is_nothrow_move_constructible_v<T>&&
-        //                 std::is_nothrow_move_constructible_v<E>) {
-        //             if (bool(rhs)) {
-        //                 construct_value(std::move(*rhs));
-        //             } else {
-        //                 construct_error(std::move(rhs.error()));
-        //             }
-        //         }
-
-        //         template <typename = void>
-        //         requires(std::is_void_v<T>&&
-        //                 std::is_move_constructible_v<E>) constexpr
-        //                 expected(expected&& rhs)
-        //                 noexcept(std::is_nothrow_move_constructible_v<E>) {
-        //             if (bool(rhs)) {
-        //                 construct_value();
-        //             } else {
-        //                 construct_error(std::move(rhs.error()));
-        //             }
-        //         }
 
         //         template <typename U, typename G>
         //         requires(
@@ -340,9 +232,11 @@ namespace mtl {
         //             std::forward<Args>(args)...);
         //         }
 
-        //         ///@@@
+        //  �.�.4.2 Destructor [expected.object.dtor]
+        // TODO: destructor tests, including trivial destructor functionality
+        ~expected() = default;
 
-        //         // �.�.4.3, assignment
+        //         �.�.4.3 Assignment [expected.object.assign]
         //         template <typename = void>
         //         requires((std::is_void_v<T> || (std::is_copy_assignable_v<T>
         //         &&
@@ -414,112 +308,193 @@ namespace mtl {
         //             return *this;
         //         }
 
-        //         //         expected& operator=(expected&&) = default;
-        //         //         /*TODO noexcept(
-        //         //             std::is_nothrow_move_assignable_v<T>&&
-        //         // std::is_nothrow_move_constructible_v<T>);*/
+        //         expected& operator=(expected&&) = default;
+        //         /*TODO noexcept(
+        //             std::is_nothrow_move_assignable_v<T>&&
+        // std::is_nothrow_move_constructible_v<T>);*/
 
-        //         //         template <typename U = T,
-        //         //                   std::enable_if_t<
-        //         //                       !std::is_void_v<U> &&
-        //         //                       !std::is_same_v<expected<T, E>,
-        //         //                       std::remove_cvref_t<U>> &&
-        //         // !std::conjunction_v<std::is_scalar<T>,
-        //         //                                           std::is_same<T,
-        //         // std::decay_t<U>>> &&
-        //         //                       std::is_constructible_v<T, U>
-        //         //                       /*TODO: && std::is_assignable_v<T&,
-        //         U>*/
-        //         //                       /*TODO: &&
-        //         // std::is_nothrow_move_constructible_v<E>*/>*
-        //         //                       = nullptr>
-        //         //         expected& operator=(U&& other) {
-        //         //             base::operator=(std::forward<U>(other));
-        //         //             return *this;
-        //         //         }
+        //         template <typename U = T,
+        //                   std::enable_if_t<
+        //                       !std::is_void_v<U> &&
+        //                       !std::is_same_v<expected<T, E>,
+        //                       std::remove_cvref_t<U>> &&
+        // !std::conjunction_v<std::is_scalar<T>,
+        //                                           std::is_same<T,
+        // std::decay_t<U>>> &&
+        //                       std::is_constructible_v<T, U>
+        //                       /*TODO: && std::is_assignable_v<T&,U>*/
+        //                       /*TODO: &&
+        // std::is_nothrow_move_constructible_v<E>*/>*
+        //                       = nullptr>
+        //         expected& operator=(U&& other) {
+        //             base::operator=(std::forward<U>(other));
+        //             return *this;
+        //         }
 
-        //         //         template <typename G = E
-        //         //                   // TODO:,
-        //         //                   //
-        //         // std::enable_if_t<std::is_nothrow_copy_constructible_v<E>
-        //         //                   // && std::is_copy_assignable_v<E>>*
-        //         =nullptr
-        //         //                   >
-        //         //         expected& operator=(const unexpected<G>& other) {
-        //         //             base::operator=(other);
-        //         //             return *this;
-        //         //         }
+        //         template <typename G = E
+        //                   // TODO:,
+        //                   //
+        // std::enable_if_t<std::is_nothrow_copy_constructible_v<E>
+        //                   // && std::is_copy_assignable_v<E>>*
+        //=nullptr
+        //                   >
+        //         expected& operator=(const unexpected<G>& other) {
+        //             base::operator=(other);
+        //             return *this;
+        //         }
 
-        //         //         template <typename G = E
-        //         //                   // TODO:,
-        //         //                   //
-        //         // std::enable_if_t<std::is_nothrow_move_constructible_v<E>
-        //         //                   // && std::is_move_assignable_v<E>>*
-        //         =nullptr
-        //         //                   >
-        //         //         expected& operator=(unexpected<G>&& other) {
-        //         // base::operator=(std::forward<unexpected<G>>(other));
-        //         //             return *this;
-        //         //         }
+        //         template <typename G = E
+        //                   // TODO:,
+        //                   //
+        // std::enable_if_t<std::is_nothrow_move_constructible_v<E>
+        //                   // && std::is_move_assignable_v<E>>*
+        //=nullptr
+        //                   >
+        //         expected& operator=(unexpected<G>&& other) {
+        // base::operator=(std::forward<unexpected<G>>(other));
+        //             return *this;
+        //         }
 
-        //         //         // �.�.4.4, modifiers
+        //         // �.�.4.4 Modifiers [expected.object.modify]
+        //         template <typename U = T
+        //                   /* TODO
+        //                       typename G = E,
+        //                             std::enable_if_t<
+        //                                 std::is_swappable_v<T> &&
+        //
+        //                                 TODO: Lvalues
+        //                      of type T are
+        // //
+        // Swappable;
+        // and
+        //                                     std::is_swappable_v<E>
+        //&&
+        //
+        //                                     TODO:
+        //                      Lvalues of type E
+        // //
+        // are
+        //                      Swappable; and
+        //                      std::is_void_v<U>
+        //                      || (std::is_move_constructible_v<U>
+        //||
+        // std::is_move_constructible_v<G>)>*
+        //                                  =
+        //                      nullptr*/
+        //                   >
+        //         void swap(expected& other) noexcept(
+        //             std::is_nothrow_move_constructible_v<T>&&
+        //                 std::is_nothrow_swappable_v<T>&&
+        // std::is_nothrow_move_constructible_v<E>&&
+        //                         std::is_nothrow_swappable_v<E>) {
+        //             base::swap(other);
+        //         }
 
-        //         //         template <typename U = T, typename... Args,
-        //         //                   std::enable_if_t<!std::is_void_v<U>>*
-        //         //                   =
-        //         //                       nullptr>
-        //         //         U& emplace(Args&&... args) {
-        //         //             return
-        //         base::emplace(std::forward<Args>(args)...);
-        //         //         }
+        //         template <typename U = T, typename... Args,
+        //                   std::enable_if_t<!std::is_void_v<U>>*
+        //                   =
+        //                       nullptr>
+        //         U& emplace(Args&&... args) {
+        //             return
+        // base::emplace(std::forward<Args>(args)...);
+        //         }
 
-        //         //         template <typename U = T, typename V, typename...
-        //         Args,
-        //         //                   std::enable_if_t<!std::is_void_v<U>>*
-        //         //                   =
-        //         //                       nullptr>
-        //         //         U& emplace(initializer_list<V> list, Args&&...
-        //         args) {
-        //         //             return base::emplace(list,
-        //         //             std::forward<Args>(args)...);
-        //         //         }
+        //         template <typename U = T, typename V, typename...
+        // Args,
+        //                   std::enable_if_t<!std::is_void_v<U>>*
+        //                   =
+        //                       nullptr>
+        //         U& emplace(initializer_list<V> list, Args&&...
+        // args) {
+        //             return base::emplace(list,
+        //             std::forward<Args>(args)...);
+        //         }
 
-        //         //         // �.�.4.5, swap
-        //         //         template <typename U = T
-        //         //                   /* TODO
-        //         //                       typename G = E,
-        //         //                             std::enable_if_t<
-        //         //                                 std::is_swappable_v<T> &&
-        //         //
-        //         //                                 TODO: Lvalues
-        //         //                      of type T are
-        //         // //
-        //         // Swappable;
-        //         // and
-        //         //                                     std::is_swappable_v<E>
-        //         &&
-        //         //
-        //         //                                     TODO:
-        //         //                      Lvalues of type E
-        //         // //
-        //         // are
-        //         //                      Swappable; and
-        //         //                      std::is_void_v<U>
-        //         //                      || (std::is_move_constructible_v<U>
-        //         ||
-        //         // std::is_move_constructible_v<G>)>*
-        //         //                                  =
-        //         //                      nullptr*/
-        //         //                   >
-        //         //         void swap(expected& other) noexcept(
-        //         //             std::is_nothrow_move_constructible_v<T>&&
-        //         //                 std::is_nothrow_swappable_v<T>&&
-        //         // std::is_nothrow_move_constructible_v<E>&&
-        //         //                         std::is_nothrow_swappable_v<E>) {
-        //         //             base::swap(other);
-        //         //         }
+        // �.�.4.5 Observers [expected.object.observe]
+        constexpr const T* operator->() const {
+            return std::addressof(this->_value);
+        }
+        constexpr T* operator->() { return std::addressof(this->_value); }
+        constexpr const auto& operator*() const& { return this->_value; }
+        constexpr auto& operator*() & { return this->_value; }
+        constexpr const auto&& operator*() const&& {
+            return std::move(this->_value);
+        }
+        constexpr auto&& operator*() && { return std::move(this->_value); }
+        constexpr explicit operator bool() const noexcept {
+            return this->_has_value;
+        }
+        constexpr bool has_value() const noexcept { return this->_has_value; }
 
-        //         // �.�.4.7, Expected equality operators
+        // TODO: unit tests for value()
+        template <typename U = T>
+        requires(!std::is_void_v<T> &&
+                 std::is_same_v<T, U>) constexpr const U& value() const& {
+#if MTL_EXCEPTIONS
+            if (!*this)
+                throw bad_expected_access(error());
+#endif
+            return this->_value;
+        }
+
+        template <typename U = T>
+        requires(
+            !std::is_void_v<T> && std::is_same_v<T, U>) constexpr U& value() & {
+#if MTL_EXCEPTIONS
+            if (!*this)
+                throw bad_expected_access(error());
+#endif
+            return this->_value;
+        }
+
+        template <typename U = T>
+        requires(!std::is_void_v<T> &&
+                 std::is_same_v<T, U>) constexpr const U&& value() const&& {
+#if MTL_EXCEPTIONS
+            if (!*this)
+                throw bad_expected_access(error());
+#endif
+            return std::move(this->_value);
+        }
+
+        template <typename U = T>
+        requires(!std::is_void_v<T> &&
+                 std::is_same_v<T, U>) constexpr U&& value() && {
+#if MTL_EXCEPTIONS
+            if (!*this)
+                throw bad_expected_access(error());
+#endif
+            return std::move(this->_value);
+        }
+
+        constexpr const E& error() const& { return this->_error.value(); }
+
+        constexpr E& error() & { return this->_error.value(); }
+
+        constexpr const E&& error() const&& {
+            return std::move(this->_error.value());
+        }
+
+        constexpr E&& error() && { return std::move(this->_error.value()); }
+
+        // TODO: unit tests for value_or()
+        template <typename U>
+        requires(std::is_copy_constructible_v<T>&&
+                std::is_convertible_v<U&&, T>) constexpr T
+            value_or(U&& value) const& {
+            return bool(*this) ? **this
+                               : static_cast<T>(std::forward<U>(value));
+        }
+
+        template <typename U>
+        requires(std::is_move_constructible_v<T>&&
+                std::is_convertible_v<U&&, T>) constexpr T
+            value_or(U&& value) && {
+            return bool(*this) ? std::move(**this)
+                               : static_cast<T>(std::forward<U>(value));
+        }
+
+        //         // �.�.4.6 Expected Equality operators [expected.equality_op]
         //         template <typename T1, typename E1, typename T2, typename E2>
         //         friend constexpr bool operator==(
         //             const expected<T1, E1>& x, const expected<T2, E2>& y);
@@ -527,7 +502,7 @@ namespace mtl {
         //         friend constexpr bool operator!=(
         //             const expected<T1, E1>& x, const expected<T2, E2>& y);
 
-        //         // �.�.4.8, Comparison with T
+        //         // �.�.4.7 Comparison with T [expected.comparison_T]
         //         template <typename T1, typename E1, typename T2>
         //         friend constexpr bool operator==(const expected<T1, E1>&,
         //         const T2&); template <typename T1, typename E1, typename T2>
@@ -538,9 +513,9 @@ namespace mtl {
         //         typename E1, typename T2> friend constexpr bool
         //         operator!=(const T2&, const expected<T1, E1>&);
 
-        //         // �.�.4.9, Comparison with unexpected<E>
-        //         template <typename T1, typename E1, typename E2>
-        //         friend constexpr bool operator==(
+        //         // �.�.4.8 Comparison with unexpected<E>
+        //         [expected.comparison_unexpected_E] template <typename T1,
+        //         typename E1, typename E2> friend constexpr bool operator==(
         //             const expected<T1, E1>&, const unexpected<E2>&);
         //         template <typename T1, typename E1, typename E2>
         //         friend constexpr bool operator==(
@@ -552,111 +527,111 @@ namespace mtl {
         //         friend constexpr bool operator!=(
         //             const unexpected<E2>&, const expected<T1, E1>&);
 
-        //         // �.�.4.10, Specialized algorithms
+        //         // �.�.4.9 Specialized algorithms [expected.specalg]
         //         template <typename T1, typename E1>
         //         friend void swap(expected<T1, E1>& x, expected<T1, E1>& y)
         //         noexcept(
         //             noexcept(x.swap(y)));
     };
 
-    //     // template <typename T1, typename E1, typename T2, typename E2>
-    //     // constexpr bool operator==(const expected<T1, E1>& x,
-    //     //                           const expected<T2, E2>& y) {
-    //     //     if (bool(x))
-    //     //         return bool(y) && *x == *y;
-    //     //     else
-    //     //         return !bool(y) && x.error() == y.error();
-    //     // }
+    // template <typename T1, typename E1, typename T2, typename E2>
+    // constexpr bool operator==(const expected<T1, E1>& x,
+    //                           const expected<T2, E2>& y) {
+    //     if (bool(x))
+    //         return bool(y) && *x == *y;
+    //     else
+    //         return !bool(y) && x.error() == y.error();
+    // }
 
-    //     // template <typename E1, typename T2, typename E2>
-    //     // constexpr bool operator==(const expected<void, E1>& x,
-    //     //                           const expected<T2, E2>& y) {
-    //     //     if (bool(x))
-    //     //         return false;
-    //     //     else
-    //     //         return !bool(y) && x.error() == y.error();
-    //     // }
+    // template <typename E1, typename T2, typename E2>
+    // constexpr bool operator==(const expected<void, E1>& x,
+    //                           const expected<T2, E2>& y) {
+    //     if (bool(x))
+    //         return false;
+    //     else
+    //         return !bool(y) && x.error() == y.error();
+    // }
 
-    //     // template <typename T1, typename E1, typename E2>
-    //     // constexpr bool operator==(const expected<T1, E1>& x,
-    //     //                           const expected<void, E2>& y) {
-    //     //     return y == x;
-    //     // }
+    // template <typename T1, typename E1, typename E2>
+    // constexpr bool operator==(const expected<T1, E1>& x,
+    //                           const expected<void, E2>& y) {
+    //     return y == x;
+    // }
 
-    //     // template <typename E1, typename E2>
-    //     // constexpr bool operator==(const expected<void, E1>& x,
-    //     //                           const expected<void, E2>& y) {
-    //     //     if (bool(x))
-    //     //         return bool(y);
-    //     //     else
+    // template <typename E1, typename E2>
+    // constexpr bool operator==(const expected<void, E1>& x,
+    //                           const expected<void, E2>& y) {
+    //     if (bool(x))
+    //         return bool(y);
+    //     else
 
-    //     //         return !bool(y) && x.error() == y.error();
-    //     // }
+    //         return !bool(y) && x.error() == y.error();
+    // }
 
-    //     // template <typename T1, typename E1, typename T2, typename E2>
-    //     // constexpr bool operator!=(const expected<T1, E1>& x,
-    //     //                           const expected<T2, E2>& y) {
-    //     //     return !(x == y);
-    //     // }
+    // template <typename T1, typename E1, typename T2, typename E2>
+    // constexpr bool operator!=(const expected<T1, E1>& x,
+    //                           const expected<T2, E2>& y) {
+    //     return !(x == y);
+    // }
 
-    //     // template <typename T1, typename E1, typename T2>
-    //     // constexpr bool operator==(const expected<T1, E1>& x, const T2& y)
-    //     {
-    //     //     return bool(x) ? *x == y : false;
-    //     // }
+    // template <typename T1, typename E1, typename T2>
+    // constexpr bool operator==(const expected<T1, E1>& x, const T2& y)
+    // {
+    //     return bool(x) ? *x == y : false;
+    // }
 
-    //     // template <typename T1, typename E1, typename T2>
-    //     // constexpr bool operator==(const T2& x, const expected<T1, E1>& y)
-    //     {
-    //     //     return y == x;
-    //     // }
+    // template <typename T1, typename E1, typename T2>
+    // constexpr bool operator==(const T2& x, const expected<T1, E1>& y)
+    // {
+    //     return y == x;
+    // }
 
-    //     // template <typename T1, typename E1, typename T2>
-    //     // constexpr bool operator!=(const expected<T1, E1>& x, const T2& y)
-    //     {
-    //     //     return !(x == y);
-    //     // }
+    // template <typename T1, typename E1, typename T2>
+    // constexpr bool operator!=(const expected<T1, E1>& x, const T2& y)
+    // {
+    //     return !(x == y);
+    // }
 
-    //     // template <typename T1, typename E1, typename T2>
-    //     // constexpr bool operator!=(const T2& x, const expected<T1, E1>& y)
-    //     {
-    //     //     return !(x == y);
-    //     // }
+    // template <typename T1, typename E1, typename T2>
+    // constexpr bool operator!=(const T2& x, const expected<T1, E1>& y)
+    // {
+    //     return !(x == y);
+    // }
 
-    //     // template <typename T1, typename E1, typename E2>
-    //     // constexpr bool operator==(const expected<T1, E1>& x,
-    //     //                           const unexpected<E2>& y) {
-    //     //     return bool(x) ? false : unexpected(x.error()) == y;
-    //     // }
+    // template <typename T1, typename E1, typename E2>
+    // constexpr bool operator==(const expected<T1, E1>& x,
+    //                           const unexpected<E2>& y) {
+    //     return bool(x) ? false : unexpected(x.error()) == y;
+    // }
 
-    //     // template <typename T1, typename E1, typename E2>
-    //     // constexpr bool operator==(const unexpected<E2>& x,
-    //     //                           const expected<T1, E1>& y) {
-    //     //     return y == x;
-    //     // }
+    // template <typename T1, typename E1, typename E2>
+    // constexpr bool operator==(const unexpected<E2>& x,
+    //                           const expected<T1, E1>& y) {
+    //     return y == x;
+    // }
 
-    //     // template <typename T1, typename E1, typename E2>
-    //     // constexpr bool operator!=(const expected<T1, E1>& x,
-    //     //                           const unexpected<E2>& y) {
-    //     //     return !(x == y);
-    //     // }
+    // template <typename T1, typename E1, typename E2>
+    // constexpr bool operator!=(const expected<T1, E1>& x,
+    //                           const unexpected<E2>& y) {
+    //     return !(x == y);
+    // }
 
-    //     // template <typename T1, typename E1, typename E2>
-    //     // constexpr bool operator!=(const unexpected<E2>& x,
-    //     //                           const expected<T1, E1>& y) {
-    //     //     return !(x == y);
-    //     // }
+    // template <typename T1, typename E1, typename E2>
+    // constexpr bool operator!=(const unexpected<E2>& x,
+    //                           const expected<T1, E1>& y) {
+    //     return !(x == y);
+    // }
 
-    //     // template <typename T1, typename E1,
-    //     //           std::enable_if_t<
-    //     //               (std::is_void_v<std::remove_cvref_t<T1>> ||
-    //     // std::is_move_constructible_v<T1>)&&std::is_swappable_v<T1>
-    //     //                &&
-    //     //               std::is_move_constructible_v<E1> &&
-    //     //               std::is_swappable_v<E1>>* = nullptr>
-    //     // void swap(expected<T1, E1>& x,
-    //     //           expected<T1, E1>& y) noexcept(noexcept(x.swap(y))) {
-    //     //     x.swap(y);
-    //     // }
+    // template <typename T1, typename E1,
+    //           std::enable_if_t<
+    //               (std::is_void_v<std::remove_cvref_t<T1>> ||
+    // std::is_move_constructible_v<T1>)&&std::is_swappable_v<T1>
+    //                &&
+    //               std::is_move_constructible_v<E1> &&
+    //               std::is_swappable_v<E1>>* = nullptr>
+    // void swap(expected<T1, E1>& x,
+    //           expected<T1, E1>& y) noexcept(noexcept(x.swap(y))) {
+    //     x.swap(y);
+    // }
 
 } // namespace mtl
