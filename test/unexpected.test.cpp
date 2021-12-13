@@ -31,6 +31,8 @@
 
 TEST_CASE("unexpected constructors", "[unexpected]") {
 
+    static_assert(!std::is_default_constructible_v<mtl::unexpected<int>>);
+
     SECTION("from value") {
         mtl::unexpected<IntValue> a{123};
         REQUIRE(a.value() == 123);
