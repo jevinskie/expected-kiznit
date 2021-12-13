@@ -244,12 +244,71 @@ namespace mtl {
 
         ///@@@
 
-        //         // �.�.4.3, assignment
-        //         expected&
-        //         operator=(const expected&) = default; // TODO: noexcept
-        //         clause, not
-        //                                               // explitcly
-        //                                               specified in R10
+        // �.�.4.3, assignment
+        template <typename = void>
+        requires((std::is_void_v<T> || (std::is_copy_assignable_v<T> &&
+                                           std::is_copy_constructible_v<T>)) &&
+                 std::is_copy_assignable_v<E> && std::is_copy_constructible_v<E>
+
+            ) expected&
+        operator=(
+            const expected& rhs) { // todo: noexcept() clause, not specified
+
+            if (bool(*this)) {
+                if (bool(rhs)) {
+                    _value = *rhs;
+                } else {
+                    if (std::is_nothrow_copy_constructible_v<T>) {
+                        _error.~unexpected<E>();
+                        construct_value(*rhs);
+                    } else if (std::is_nothrow_move_constructible_v<T>) {
+                        T temp(*rhs);
+                        _error.~unexpected<E>();
+                        construct_value(std::move(temp));
+                    } else {
+#if MTL_EXCEPTIONS
+                        unexpected<E> temp(error());
+                        _error.~unexpected<E>();
+                        try {
+                            construct_value(*rhs);
+                        } catch (...) {
+                            constuct_error(std::move(temp));
+                            throw;
+                        }
+#else
+                        construct_value(*rhs);
+#endif
+                    }
+                }
+            } else {
+                if (bool(rhs)) {
+                    if (std::is_nothrow_copy_constructible_v<E>) {
+                        _value.~T();
+                        construct_error(rhs.error());
+                    } else if (std::is_nothrow_move_constructible_v<E>) {
+                        unexpected<E> temp(rhs.error());
+                        _value.~T();
+                        construct_error(std::move(temp));
+                    } else {
+                        T temp(*this);
+                        _value.~T();
+#if MTL_EXCEPTIONS
+                        try {
+                            construct_error(rhs.error());
+                        } catch (...) {
+                            construct_value(std::move(temp));
+                            throw;
+                        }
+#else
+                        construct_error(rhs.error());
+#endif
+                    }
+                } else {
+                    _error = unexpected(rhs.error());
+                }
+            }
+            return *this;
+        }
 
         //         expected& operator=(expected&&) = default;
         //         /*TODO noexcept(
