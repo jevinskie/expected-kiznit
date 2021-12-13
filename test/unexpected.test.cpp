@@ -29,6 +29,8 @@
 #include <catch2/catch.hpp>
 #include "value.hpp"
 
+using namespace oldtests;
+
 TEST_CASE("unexpected constructors", "[unexpected]") {
 
     static_assert(!std::is_default_constructible_v<mtl::unexpected<int>>);

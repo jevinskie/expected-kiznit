@@ -29,7 +29,7 @@
 #include <catch2/catch.hpp>
 #include "value.hpp"
 
-// // enum class Error { FileNotFound, IOError, FlyingSquirrels };
+enum class Error { FileNotFound, IOError, FlyingSquirrels };
 
 TEST_CASE("expected types") {
     using T = std::expected<short, bool>;
@@ -53,33 +53,31 @@ TEST_CASE("rebind<>") {
     static_assert(std::is_same_v<W::error_type, bool>);
 }
 
-// TEST_CASE("expected()") {
-//     // SECTION("value") {
-//     //     std::expected<DefaultInt, Error> a;
-//     //     REQUIRE(a);
-//     //     REQUIRE(*a == DefaultInt::DefaultValue);
-//     // }
+TEST_CASE("Default constructor") {
+    SECTION("T is default-constructible") {
+        using Type = std::expected<DefaultConstructible, Error>;
+        static_assert(std::is_default_constructible_v<Type>);
 
-//     //     SECTION("void value") {
-//     //         std::expected<void, Error> a;
-//     //         REQUIRE(a);
-//     //     }
+        Type a;
 
-//     //     SECTION("const void value") {
-//     //         std::expected<const void, Error> a;
-//     //         REQUIRE(a);
-//     //     }
+        REQUIRE(a);
+        REQUIRE(a->value == DefaultConstructible::DefaultValue);
+    }
 
-//     //     SECTION("volatile void value") {
-//     //         std::expected<volatile void, Error> a;
-//     //         REQUIRE(a);
-//     //     }
+    SECTION("T is not default-constructible") {
+        using Type = std::expected<NotDefaultConstructible, Error>;
+        static_assert(!std::is_default_constructible_v<Type>);
+    }
 
-//     //     SECTION("const volatile void value") {
-//     //         std::expected<const volatile void, Error> a;
-//     //         REQUIRE(a);
-//     //     }
-// }
+    SECTION("T is void") {
+        using Type = std::expected<void, Error>;
+        static_assert(std::is_default_constructible_v<Type>);
+
+        Type a;
+
+        REQUIRE(a);
+    }
+}
 
 // TEST_CASE("expected(const expected&)") {
 //     // SECTION("value") {
@@ -193,13 +191,14 @@ TEST_CASE("rebind<>") {
 
 // TEST_CASE("expected(const unexpected<G>&)") {
 //     SECTION("error") {
-//         std::expected<int, Error> a((mtl::unexpected(Error::FileNotFound)));
-//         REQUIRE(!a);
+//         std::expected<int, Error>
+//         a((mtl::unexpected(Error::FileNotFound))); REQUIRE(!a);
 //         REQUIRE(a.error() == Error::FileNotFound);
 //     }
 
 //     // SECTION("void error)") {
-//     //     std::expected<void, Error> a((mtl::unexpected(Error::IOError)));
+//     //     std::expected<void, Error>
+//     a((mtl::unexpected(Error::IOError)));
 //     //     REQUIRE(!a);
 //     //     REQUIRE(a.error() == Error::IOError);
 //     // }
@@ -232,9 +231,8 @@ TEST_CASE("rebind<>") {
 //     SECTION("from complex value") {
 //         const IntValue a{100};
 //         IntMoveableValue b{200};
-//         mtl::expected<ComplexThing, Error> c{std::in_place, a, std::move(b)};
-//         REQUIRE(c->a == 100);
-//         REQUIRE(c->b == 200);
+//         mtl::expected<ComplexThing, Error> c{std::in_place, a,
+//         std::move(b)}; REQUIRE(c->a == 100); REQUIRE(c->b == 200);
 //         REQUIRE(a == 100);
 //         REQUIRE(b == 0);
 //     }
@@ -270,16 +268,15 @@ TEST_CASE("rebind<>") {
 //     SECTION("in-place with multiple parameters") {
 //         const IntValue a{100};
 //         IntMoveableValue b{200};
-//         mtl::expected<ComplexThing, Error> c{std::in_place, a, std::move(b)};
-//         REQUIRE(c->a == 100);
-//         REQUIRE(c->b == 200);
+//         mtl::expected<ComplexThing, Error> c{std::in_place, a,
+//         std::move(b)}; REQUIRE(c->a == 100); REQUIRE(c->b == 200);
 //         REQUIRE(a == 100);
 //         REQUIRE(b == 0);
 //     }
 
 //     SECTION("in-place with initializer list") {
-//         mtl::expected<std::vector<int>, Error> a{std::in_place, {1, 2, 3}};
-//         REQUIRE(a->size() == 3);
+//         mtl::expected<std::vector<int>, Error> a{std::in_place, {1, 2,
+//         3}}; REQUIRE(a->size() == 3);
 //     }
 
 //     SECTION("in-place with initializer list and extra parameters") {
@@ -309,11 +306,9 @@ TEST_CASE("rebind<>") {
 //     SECTION("unexpect_t with multiple parameters") {
 //         const IntValue a{100};
 //         IntMoveableValue b{200};
-//         mtl::expected<int, ComplexThing> c{mtl::unexpect, a, std::move(b)};
-//         REQUIRE(c.error().a == 100);
-//         REQUIRE(c.error().b == 200);
-//         REQUIRE(a == 100);
-//         REQUIRE(b == 0);
+//         mtl::expected<int, ComplexThing> c{mtl::unexpect, a,
+//         std::move(b)}; REQUIRE(c.error().a == 100); REQUIRE(c.error().b
+//         == 200); REQUIRE(a == 100); REQUIRE(b == 0);
 //     }
 
 //     SECTION("unexpect_t with initializer list and extra parameters") {
@@ -422,9 +417,8 @@ TEST_CASE("rebind<>") {
 
 //     SECTION("move with conversion - value") {
 //         mtl::expected<IntMoveableValue, IntMoveableValue> a{69};
-//         mtl::expected<LongMoveableValue, LongMoveableValue> b{std::move(a)};
-//         REQUIRE(a.has_value());
-//         REQUIRE(b.has_value());
+//         mtl::expected<LongMoveableValue, LongMoveableValue>
+//         b{std::move(a)}; REQUIRE(a.has_value()); REQUIRE(b.has_value());
 //         REQUIRE(*a == 0);
 //         REQUIRE(*b == 69l);
 
@@ -437,8 +431,8 @@ TEST_CASE("rebind<>") {
 //     SECTION("move with conversion - error") {
 //         mtl::expected<IntMoveableValue, IntMoveableValue> a{
 //             mtl::unexpected(456)};
-//         mtl::expected<LongMoveableValue, LongMoveableValue> b{std::move(a)};
-//         REQUIRE(!a.has_value());
+//         mtl::expected<LongMoveableValue, LongMoveableValue>
+//         b{std::move(a)}; REQUIRE(!a.has_value());
 //         REQUIRE(!b.has_value());
 //         REQUIRE(a.error() == 0);
 //         REQUIRE(b.error() == 456l);
@@ -480,7 +474,8 @@ TEST_CASE("rebind<>") {
 // //         REQUIRE(b.error() == Error::FileNotFound);
 // //     }
 
-// //     SECTION("assign_value_to_error - is_nothrow_copy_constructible_v<>")
+// //     SECTION("assign_value_to_error -
+// is_nothrow_copy_constructible_v<>")
 // //     {
 // //         using type = mtl::expected<IntValue, Error>;
 // // static_assert(std::is_nothrow_copy_constructible_v<type::value_type>);
@@ -496,10 +491,12 @@ TEST_CASE("rebind<>") {
 // //         REQUIRE(*b == 111);
 // //     }
 
-// //     SECTION("assign_value_to_error - is_nothrow_move_constructible_v<>")
+// //     SECTION("assign_value_to_error -
+// is_nothrow_move_constructible_v<>")
 // //     {
 // //         using type = mtl::expected<std::vector<int>, Error>;
-// // static_assert(!std::is_nothrow_copy_constructible_v<type::value_type>);
+// //
+// static_assert(!std::is_nothrow_copy_constructible_v<type::value_type>);
 // // static_assert(std::is_nothrow_move_constructible_v<type::value_type>);
 
 // //         const type a(std::in_place, {1, 2, 3});
@@ -515,8 +512,10 @@ TEST_CASE("rebind<>") {
 
 // //     SECTION("assign_value_to_error - neither") {
 // //         using type = mtl::expected<AssignableComplexThing, Error>;
-// // static_assert(!std::is_nothrow_copy_constructible_v<type::value_type>);
-// // static_assert(!std::is_nothrow_move_constructible_v<type::value_type>);
+// //
+// static_assert(!std::is_nothrow_copy_constructible_v<type::value_type>);
+// //
+// static_assert(!std::is_nothrow_move_constructible_v<type::value_type>);
 
 // //         const type a{std::in_place, {1, 2, 3}, 45, 69};
 // //         type b{mtl::unexpected(Error::FlyingSquirrels)};
@@ -534,11 +533,14 @@ TEST_CASE("rebind<>") {
 // //     }
 
 // // #if MTL_EXCEPTIONS
-// //     SECTION("assign_value_to_error - neither + throws exception on copy")
+// //     SECTION("assign_value_to_error - neither + throws exception on
+// copy")
 // //     {
 // //         using type = mtl::expected<AssignableComplexThing, Error>;
-// // static_assert(!std::is_nothrow_copy_constructible_v<type::value_type>);
-// // static_assert(!std::is_nothrow_move_constructible_v<type::value_type>);
+// //
+// static_assert(!std::is_nothrow_copy_constructible_v<type::value_type>);
+// //
+// static_assert(!std::is_nothrow_move_constructible_v<type::value_type>);
 
 // //         const type a{std::in_place, {1, 2, 3}, 45, 69};
 // //         type b{mtl::unexpected(Error::FlyingSquirrels)};
@@ -555,7 +557,8 @@ TEST_CASE("rebind<>") {
 // //     }
 // // #endif
 
-// //     SECTION("assign_error_to_value - is_nothrow_copy_constructible_v<>")
+// //     SECTION("assign_error_to_value -
+// is_nothrow_copy_constructible_v<>")
 // //     {
 // //         using type = mtl::expected<IntValue, Error>;
 // // static_assert(std::is_nothrow_copy_constructible_v<type::error_type>);
@@ -571,10 +574,12 @@ TEST_CASE("rebind<>") {
 // //         REQUIRE(b.error() == Error::FlyingSquirrels);
 // //     }
 
-// //     SECTION("assign_error_to_value - is_nothrow_move_constructible_v<>")
+// //     SECTION("assign_error_to_value -
+// is_nothrow_move_constructible_v<>")
 // //     {
 // //         using type = mtl::expected<IntValue, std::vector<int>>;
-// // static_assert(!std::is_nothrow_copy_constructible_v<type::error_type>);
+// //
+// static_assert(!std::is_nothrow_copy_constructible_v<type::error_type>);
 // // static_assert(std::is_nothrow_move_constructible_v<type::error_type>);
 
 // //         const type a{mtl::unexpected(std::vector<int>{1, 2, 3})};
@@ -590,11 +595,14 @@ TEST_CASE("rebind<>") {
 
 // //     SECTION("assign_error_to_value - neither") {
 // //         using type = mtl::expected<IntValue, AssignableComplexThing>;
-// // static_assert(!std::is_nothrow_copy_constructible_v<type::error_type>);
-// // static_assert(!std::is_nothrow_move_constructible_v<type::error_type>);
+// //
+// static_assert(!std::is_nothrow_copy_constructible_v<type::error_type>);
+// //
+// static_assert(!std::is_nothrow_move_constructible_v<type::error_type>);
 
 // //         const type a{mtl::unexpected(
-// //             AssignableComplexThing{std::vector<int>{1, 2, 3}, 45, 69})};
+// //             AssignableComplexThing{std::vector<int>{1, 2, 3}, 45,
+// 69})};
 // //         type b{333};
 
 // //         b = a;
@@ -610,14 +618,18 @@ TEST_CASE("rebind<>") {
 // //     }
 
 // // #if MTL_EXCEPTIONS
-// //     SECTION("assign_error_to_value - neither + throws exception on copy")
+// //     SECTION("assign_error_to_value - neither + throws exception on
+// copy")
 // //     {
 // //         using type = mtl::expected<IntValue, AssignableComplexThing>;
-// // static_assert(!std::is_nothrow_copy_constructible_v<type::error_type>);
-// // static_assert(!std::is_nothrow_move_constructible_v<type::error_type>);
+// //
+// static_assert(!std::is_nothrow_copy_constructible_v<type::error_type>);
+// //
+// static_assert(!std::is_nothrow_move_constructible_v<type::error_type>);
 
 // //         const type a{mtl::unexpected(
-// //             AssignableComplexThing{std::vector<int>{1, 2, 3}, 45, 69})};
+// //             AssignableComplexThing{std::vector<int>{1, 2, 3}, 45,
+// 69})};
 // //         type b{333};
 
 // //         const_cast<AssignableComplexThing&>(a.error()).throwsOnCopy =
@@ -699,8 +711,10 @@ TEST_CASE("rebind<>") {
 // //     }
 
 // //     SECTION("move error to error") {
-// //         mtl::expected<IntValue, IntMoveableValue> a{mtl::unexpected(14)};
-// //         mtl::expected<IntValue, IntMoveableValue> b{mtl::unexpected(17)};
+// //         mtl::expected<IntValue, IntMoveableValue>
+// a{mtl::unexpected(14)};
+// //         mtl::expected<IntValue, IntMoveableValue>
+// b{mtl::unexpected(17)};
 
 // //         b = std::move(a);
 
@@ -710,7 +724,8 @@ TEST_CASE("rebind<>") {
 // //         REQUIRE(b.error() == 14);
 // //     }
 
-// //     SECTION("move_value_to_error - is_nothrow_move_constructible_v<>") {
+// //     SECTION("move_value_to_error - is_nothrow_move_constructible_v<>")
+// {
 // //         using type = mtl::expected<std::vector<int>, Error>;
 // // static_assert(std::is_nothrow_move_constructible_v<type::value_type>);
 
@@ -727,7 +742,8 @@ TEST_CASE("rebind<>") {
 
 // //     SECTION("move_value_to_error - fallback") {
 // //         using type = mtl::expected<IntMoveableValue, Error>;
-// // static_assert(!std::is_nothrow_move_constructible_v<type::value_type>);
+// //
+// static_assert(!std::is_nothrow_move_constructible_v<type::value_type>);
 
 // //         type a{143};
 // //         type b{mtl::unexpected(Error::FlyingSquirrels)};
@@ -743,7 +759,8 @@ TEST_CASE("rebind<>") {
 // // #if MTL_EXCEPTIONS
 // //     SECTION("move_value_to_error - fallback - throws on move") {
 // //         using type = mtl::expected<IntMoveableValue, Error>;
-// // static_assert(!std::is_nothrow_move_constructible_v<type::value_type>);
+// //
+// static_assert(!std::is_nothrow_move_constructible_v<type::value_type>);
 
 // //         type a{143};
 // //         type b{mtl::unexpected(Error::FlyingSquirrels)};
@@ -758,7 +775,8 @@ TEST_CASE("rebind<>") {
 // //     }
 // // #endif
 
-// //     SECTION("move_error_to_value - is_nothrow_move_constructible_v<>") {
+// //     SECTION("move_error_to_value - is_nothrow_move_constructible_v<>")
+// {
 // //         using type = mtl::expected<IntValue, std::vector<int>>;
 // // static_assert(std::is_nothrow_move_constructible_v<type::error_type>);
 
@@ -775,7 +793,8 @@ TEST_CASE("rebind<>") {
 
 // //     SECTION("move_error_to_value - fallback - throws on move") {
 // //         using type = mtl::expected<IntValue, IntMoveableValue>;
-// // static_assert(!std::is_nothrow_move_constructible_v<type::error_type>);
+// //
+// static_assert(!std::is_nothrow_move_constructible_v<type::error_type>);
 
 // //         type a{mtl::unexpect, 143};
 // //         type b{732};
@@ -791,7 +810,8 @@ TEST_CASE("rebind<>") {
 // // #if MTL_EXCEPTIONS
 // //     SECTION("move_error_to_value - fallback - throws on move") {
 // //         using type = mtl::expected<IntValue, IntMoveableValue>;
-// // static_assert(!std::is_nothrow_move_constructible_v<type::error_type>);
+// //
+// static_assert(!std::is_nothrow_move_constructible_v<type::error_type>);
 
 // //         type a{mtl::unexpect, 143};
 // //         type b{732};
@@ -853,7 +873,8 @@ TEST_CASE("rebind<>") {
 // //     }
 
 // // #if MTL_EXCEPTIONS
-// //     SECTION("move_error_to_value - void specialization - throws on move")
+// //     SECTION("move_error_to_value - void specialization - throws on
+// move")
 // //     {
 // //         using type = mtl::expected<void, IntMoveableValue>;
 
@@ -886,7 +907,7 @@ TEST_CASE("rebind<>") {
 // //         using type = mtl::expected<NotNoThrowConstructible,
 // //         IntMoveableValue>; static_assert(
 // //             !std::is_nothrow_constructible_v<type::value_type,
-// //                                              NotNoThrowConstructible>);
+// // NotNoThrowConstructible>);
 // //         type c{mtl::unexpected(777)};
 // //         c = NotNoThrowConstructible{44};
 // //         REQUIRE(c.has_value());
@@ -910,7 +931,8 @@ TEST_CASE("rebind<>") {
 // //         REQUIRE(!a.has_value());
 // //         REQUIRE(a.error() == Error::FileNotFound);
 
-// //         mtl::expected<IntValue, Error> b{mtl::unexpect, Error::IOError};
+// //         mtl::expected<IntValue, Error> b{mtl::unexpect,
+// Error::IOError};
 // //         auto b2 = mtl::unexpected(Error::FlyingSquirrels);
 // //         b = b2;
 // //         REQUIRE(!b.has_value());
@@ -937,7 +959,8 @@ TEST_CASE("rebind<>") {
 // //         REQUIRE(a.error() == 1);
 // //         REQUIRE(a2.value() == 0);
 
-// //         mtl::expected<IntValue, IntMoveableValue> b{mtl::unexpect, -1};
+// //         mtl::expected<IntValue, IntMoveableValue> b{mtl::unexpect,
+// -1};
 // //         auto b2 = mtl::unexpected(IntMoveableValue{2});
 // //         b = std::move(b2);
 // //         REQUIRE(!b.has_value());
@@ -1014,7 +1037,8 @@ TEST_CASE("rebind<>") {
 // //     }
 
 // //     SECTION("emplace() - has error - path 3 - throws") {
-// //         // TODO: same as path 3 above, but needs to throw on construction
+// //         // TODO: same as path 3 above, but needs to throw on
+// construction
 // //         of
 // //         // T(std::foward<Arg>(args)...)
 // //     }
@@ -1036,7 +1060,8 @@ TEST_CASE("rebind<>") {
 // //     //                                           Error::FileNotFound};
 // //     //     static_assert(
 // //     //         std::is_nothrow_constructible_v<
-// //     //             decltype(a)::value_type, std::initializer_list<int>,
+// //     //             decltype(a)::value_type,
+// std::initializer_list<int>,
 // //     int,
 // //     //             int>);
 
@@ -1054,7 +1079,8 @@ TEST_CASE("rebind<>") {
 // //     //                                           Error::FileNotFound};
 // //     //     static_assert(
 // //     //         !std::is_nothrow_constructible_v<
-// //     //             decltype(a)::value_type, std::initializer_list<int>,
+// //     //             decltype(a)::value_type,
+// std::initializer_list<int>,
 // //     int,
 // //     //             int>);
 // //     //     static_assert(
@@ -1073,7 +1099,8 @@ TEST_CASE("rebind<>") {
 // //                                              Error::FileNotFound};
 // //         static_assert(
 // //             !std::is_nothrow_constructible_v<
-// //                 decltype(a)::value_type, std::initializer_list<int>, int,
+// //                 decltype(a)::value_type, std::initializer_list<int>,
+// int,
 // //                 int>);
 // //         static_assert(
 // // !std::is_nothrow_move_constructible_v<decltype(a)::value_type>);
@@ -1129,7 +1156,8 @@ TEST_CASE("rebind<>") {
 // //         using type = mtl::expected<IntValue, IntMoveableValue>;
 // //         type a{123};
 // //         type b{mtl::unexpect, 456};
-// // static_assert(!std::is_nothrow_move_constructible_v<type::error_type>);
+// //
+// static_assert(!std::is_nothrow_move_constructible_v<type::error_type>);
 // // static_assert(std::is_nothrow_move_constructible_v<type::value_type>);
 
 // //         a.swap(b);
@@ -1160,7 +1188,8 @@ TEST_CASE("rebind<>") {
 // //     }
 
 // //     SECTION("swap two errors - void specialization") {
-// //         mtl::expected<void, Error> a{mtl::unexpect, Error::FileNotFound};
+// //         mtl::expected<void, Error> a{mtl::unexpect,
+// Error::FileNotFound};
 // //         mtl::expected<void, Error> b{mtl::unexpect, Error::IOError};
 
 // //         a.swap(b);
@@ -1306,7 +1335,8 @@ TEST_CASE("rebind<>") {
 // //         REQUIRE(a.value_or(42) == 31);
 
 // //         // error - const&
-// //         const mtl::expected<int, Error> b{mtl::unexpect, Error::IOError};
+// //         const mtl::expected<int, Error> b{mtl::unexpect,
+// Error::IOError};
 // //         REQUIRE(b.value_or(42) == 42);
 
 // //         // value - &&
@@ -1314,7 +1344,8 @@ TEST_CASE("rebind<>") {
 // //         REQUIRE(std::move(c).value_or(777) == 69);
 
 // //         // error - &&
-// //         mtl::expected<int, Error> d{mtl::unexpect, Error::FileNotFound};
+// //         mtl::expected<int, Error> d{mtl::unexpect,
+// Error::FileNotFound};
 // //         REQUIRE(std::move(d).value_or(84) == 84);
 // //     }
 // // }
@@ -1350,7 +1381,8 @@ TEST_CASE("rebind<>") {
 // //         REQUIRE(e == f);
 // //     }
 
-// //     SECTION("expected and expected - mix and match void specialization")
+// //     SECTION("expected and expected - mix and match void
+// specialization")
 // //     {
 // //         const mtl::expected<int, int> a{1};
 // //         const mtl::expected<void, int> b{};

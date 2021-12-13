@@ -49,6 +49,30 @@ namespace mtl {
         template <typename U>
         using rebind = expected<U, error_type>;
 
+        // �.�.4.1, constructors
+        template <typename = void>
+        requires(std::is_default_constructible_v<T>) constexpr expected()
+            : _value(), _has_value(true) {}
+
+        //  �.�.4.2 Destructor [expected.object.dtor]
+        ~expected() {
+            if (_has_value) {
+                _value.~T();
+            } else {
+                _error.~unexpected<E>();
+            }
+        }
+
+        // �.�.4.5 Observers [expected.object.observe]
+        constexpr const T* operator->() const { return std::addressof(_value); }
+        constexpr T* operator->() { return std::addressof(_value); }
+        constexpr const auto& operator*() const& { return _value; }
+        constexpr auto& operator*() & { return _value; }
+        constexpr const auto&& operator*() const&& { return std::move(_value); }
+        constexpr auto&& operator*() && { return std::move(_value); }
+        constexpr explicit operator bool() const noexcept { return _has_value; }
+        constexpr bool has_value() const noexcept { return _has_value; }
+
     private:
         union {
             value_type _value;
@@ -67,19 +91,27 @@ namespace mtl {
         template <typename U>
         using rebind = expected<U, error_type>;
 
+        // �.�.4.1, constructors
+        template <typename = void>
+        constexpr expected() : _has_value(true) {}
+
+        //  �.�.4.2 Destructor [expected.object.dtor]
+        ~expected() {
+            if (!_has_value) {
+                _error.~unexpected_type();
+            }
+        }
+
+        // �.�.4.5 Observers [expected.object.observe]
+        constexpr explicit operator bool() const noexcept { return _has_value; }
+        constexpr bool has_value() const noexcept { return _has_value; }
+
     private:
         union {
             unexpected_type _error;
         };
         bool _has_value;
     };
-
-    // �.�.4.1, constructors
-
-    //         template <typename = void>
-    //         requires(std::is_default_constructible_v<T> ||
-    //                  std::is_void_v<T>) constexpr expected()
-    //             : _value(), _has_value(true) {}
 
     //         template <typename = void>
     //         requires((std::is_copy_constructible_v<T> ||
@@ -278,15 +310,6 @@ namespace mtl {
     //             std::forward<Args>(args)...);
     //         }
 
-    //         //  �.�.4.2 Destructor [expected.object.dtor]
-    //         ~expected() {
-    //             if (_has_value) {
-    //                 _value.~T();
-    //             } else {
-    //                 _error.~unexpected<E>();
-    //             }
-    //         }
-
     //         ///@@@
 
     //         // �.�.4.3, assignment
@@ -467,45 +490,6 @@ namespace mtl {
     //         //         }
 
     //         // �.�.4.5 Observers [expected.object.observe]
-    //         template <typename = void>
-    //         requires(!std::is_void_v<T>) constexpr const T* operator->()
-    //         const {
-    //             return std::addressof(this->_value);
-    //         }
-
-    //         template <typename = void>
-    //         requires(!std::is_void_v<T>) constexpr T* operator->() {
-    //             return std::addressof(this->_value);
-    //         }
-
-    //         template <typename = void>
-    //         requires(!std::is_void_v<T>) constexpr const auto&
-    //         operator*() const& {
-    //             return this->_value;
-    //         }
-
-    //         template <typename = void>
-    //         requires(!std::is_void_v<T>) constexpr auto& operator*() & {
-    //             return this->_value;
-    //         }
-
-    //         template <typename = void>
-    //         requires(!std::is_void_v<T>) constexpr const auto&&
-    //         operator*() const&& {
-    //             return std::move(this->_value);
-    //         }
-
-    //         template <typename = void>
-    //         requires(!std::is_void_v<T>) constexpr auto&& operator*() &&
-    //         {
-    //             return std::move(this->_value);
-    //         }
-
-    //         constexpr explicit operator bool() const noexcept { return
-    //         _has_value; }
-
-    //         constexpr bool has_value() const noexcept { return
-    //         _has_value; }
 
     //         //         template <class U = T,
     //         //                   std::enable_if_t<!std::is_void_v<U>>*
@@ -556,17 +540,17 @@ namespace mtl {
     //         //         }
 
     //         constexpr const E& error() const& { return
-    //         this->_error.value();
+    //         _error.value();
     //         }
 
-    //         constexpr E& error() & { return this->_error.value(); }
+    //         constexpr E& error() & { return _error.value(); }
 
     //         constexpr const E&& error() const&& {
-    //             return std::move(this->_error.value());
+    //             return std::move(_error.value());
     //         }
 
     //         constexpr E&& error() && { return
-    //         std::move(this->_error.value()); }
+    //         std::move(_error.value()); }
 
     //         //         template <typename U> constexpr T value_or(U&&
     //         value)
@@ -643,15 +627,15 @@ namespace mtl {
     //         // TODO: can we get rid of these two helpers? Probably...
     //         template <typename... Args>
     //         constexpr void construct_value(Args&&... args) {
-    //             new (std::addressof(this->_value))
-    //             T(std::forward<Args>(args)...); this->_has_value = true;
+    //             new (std::addressof(_value))
+    //             T(std::forward<Args>(args)...); _has_value = true;
     //         }
 
     //         template <typename... Args>
     //         constexpr void construct_error(Args&&... args) {
-    //             new (std::addressof(this->_error))
+    //             new (std::addressof(_error))
     //                 unexpected<E>(std::forward<Args>(args)...);
-    //             this->_has_value = false;
+    //             _has_value = false;
     //         }
     //};
 
