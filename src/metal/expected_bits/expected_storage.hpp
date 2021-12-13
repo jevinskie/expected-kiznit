@@ -118,17 +118,18 @@ namespace mtl {
             bool _has_value;
         };
 
-        // MaybeDeleteCopyConstructor
+        // expected_copy_constructor is used to delete the default copy
+        // constructor when T or E is not copy-constructible.
         template <typename T, typename E,
             bool HasCopyConstructor =
                 (std::is_void_v<T> || std::is_copy_constructible_v<
                                           T>)&&std::is_copy_constructible_v<E>>
-        struct MaybeDeleteCopyConstructor {};
+        struct expected_copy_constructor {};
 
         template <typename T, typename E>
-        struct MaybeDeleteCopyConstructor<T, E, false> {
-            MaybeDeleteCopyConstructor(
-                const MaybeDeleteCopyConstructor&) = delete;
+        struct expected_copy_constructor<T, E, false> {
+            expected_copy_constructor(
+                const expected_copy_constructor&) = delete;
         };
 
     } // namespace detail
