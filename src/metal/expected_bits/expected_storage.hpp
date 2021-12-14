@@ -80,6 +80,15 @@ namespace mtl {
                 }
             }
 
+            template <typename U, typename G>
+            expected_storage(expected<U, G>&& rhs) {
+                if (bool(rhs)) {
+                    construct_value(std::move(*rhs));
+                } else {
+                    construct_error(std::move(rhs.error()));
+                }
+            }
+
             ~expected_storage() {
                 if (_has_value) {
                     _value.~T();

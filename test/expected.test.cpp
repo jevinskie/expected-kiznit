@@ -155,10 +155,17 @@ TEST_CASE("Move constructor") {
 
 // TODO: expected(U&& v);
 
-TEST_CASE("Conversion constructor") {
-    SECTION("Convert T to U") {
+TEST_CASE("Conversion copy constructor") {
+    SECTION("Convert U to T") {
         using Type1 = std::expected<int, Error>;
         using Type2 = std::expected<long, Error>;
+
+        static_assert(std::is_constructible_v<Type2::value_type,
+            const Type1::value_type&>);
+
+        // TODO: need a custom type for test
+        // static_assert(!std::is_constructible_v<Type2::value_type,
+        //               const Type1::value_type&&>);
 
         const Type1 a(99);
         const Type2 b(a);
@@ -167,9 +174,36 @@ TEST_CASE("Conversion constructor") {
         REQUIRE(*b == 99);
     }
 
-    // TODO: convert E to G
+    // TODO: convert G to E
 
-    // TODO: void E to G
+    // TODO: void G to E
+}
+
+TEST_CASE("Conversion move constructor") {
+    SECTION("Move U to T") {
+        using Type1 = std::expected<int, Error>;
+        using Type2 = std::expected<long, Error>;
+
+        // TODO: need a custom type for test
+        // static_assert(!std::is_constructible_v<Type2::value_type,
+        //               const Type1::value_type&>);
+
+        static_assert(std::is_constructible_v<Type2::value_type,
+            const Type1::value_type&&>);
+
+        Type1 a(32);
+        const Type2 b(std::move(a));
+
+        // TODO: need to verify source was moved
+        // REQUIRE(a);
+        // REQUIRE(*a == 0);
+        REQUIRE(b);
+        REQUIRE(*b == 32);
+    }
+
+    // TODO: move G to E
+
+    // TODO: move G to E
 }
 
 // TEST_CASE("expected constructors", "[expected]") {
