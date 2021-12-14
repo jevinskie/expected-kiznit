@@ -59,20 +59,6 @@ namespace mtl {
                 std::is_nothrow_move_constructible_v<
                     T>)&&std::is_nothrow_move_constructible_v<E>) = default;
 
-        // TODO: revise implementation, write unit tests. I needed this
-        // constructor to write unit tests. Note: this constructor doesn't exist
-        // for the void specialization. This is expected (lol).
-        // TODO: test with non-moveable value type and test with moveable value
-        // type.
-        template <typename U = T>
-        requires(std::is_constructible_v<T, U&&> &&
-                 !std::is_same_v<std::remove_cvref_t<U>, in_place_t> &&
-                 !std::is_same_v<std::remove_cvref_t<U>, expected<T, E>> &&
-                 !std::is_same_v<std::remove_cvref_t<U>,
-                     unexpected<E>>) explicit(!std::is_convertible_v<U&&,
-                                              T>) constexpr expected(U&& v)
-            : detail::expected_storage<T, E>(std::forward<U>(v)) {}
-
         template <typename U, typename G>
         requires(
             std::is_constructible_v<T, const U&> &&
@@ -150,19 +136,14 @@ namespace mtl {
         //             }
         //         }
 
-        //         template <typename U = T>
-        //         requires(!std::is_void_v<T> && std::is_constructible_v<T,
-        //         U&&> &&
-        //                  !std::is_same_v<std::remove_cvref_t<U>, in_place_t>
-        //                  && !std::is_same_v<std::remove_cvref_t<U>,
-        //                  expected<T, E>>
-        //                  && !std::is_same_v<std::remove_cvref_t<U>,
-        //                      unexpected<E>>)
-        //                      explicit(!std::is_convertible_v<U&&,
-        //                                               T>) constexpr
-        //                                               expected(U&& v) {
-        //             construct_value(std::forward<U>(v));
-        //         }
+        template <typename U = T>
+        requires(std::is_constructible_v<T, U&&> &&
+                 !std::is_same_v<std::remove_cvref_t<U>, in_place_t> &&
+                 !std::is_same_v<std::remove_cvref_t<U>, expected<T, E>> &&
+                 !std::is_same_v<std::remove_cvref_t<U>,
+                     unexpected<E>>) explicit(!std::is_convertible_v<U&&,
+                                              T>) constexpr expected(U&& v)
+            : detail::expected_storage<T, E>(std::forward<U>(v)) {}
 
         //         template <typename G = E>
         //         requires(std::is_constructible_v<E, const G&>) explicit(

@@ -153,8 +153,6 @@ TEST_CASE("Move constructor") {
     }
 }
 
-// TODO: expected(U&& v);
-
 TEST_CASE("Conversion copy constructor") {
     SECTION("Convert U to T") {
         using Type1 = std::expected<int, Error>;
@@ -204,6 +202,39 @@ TEST_CASE("Conversion move constructor") {
     // TODO: move G to E
 
     // TODO: move G to E
+}
+
+TEST_CASE("Construct from value") {
+    SECTION("Copy a value, same type") {
+        using Type = std::expected<std::vector<int>, Error>;
+        static_assert(std::is_copy_constructible_v<Type::value_type>);
+        static_assert(std::is_move_constructible_v<Type::value_type>);
+
+        const std::vector value{1, 2, 3};
+        const Type a(value);
+
+        REQUIRE(a.value() == value);
+    }
+
+    SECTION("Copy a value, different type") {
+        // TODO
+    }
+
+    SECTION("Move a value, same type") {
+        using Type = std::expected<std::vector<int>, Error>;
+        static_assert(std::is_copy_constructible_v<Type::value_type>);
+        static_assert(std::is_move_constructible_v<Type::value_type>);
+
+        std::vector value{1, 2, 3};
+        const Type a(std::move(value));
+
+        REQUIRE(value.empty());
+        REQUIRE(a->size() == 3);
+    }
+
+    SECTION("Move a value, different type") {
+        // TODO
+    }
 }
 
 // TEST_CASE("expected constructors", "[expected]") {
