@@ -302,6 +302,22 @@ TEST_CASE("Construct using unexpect_t") {
     // TODO: more tests
 }
 
+TEST_CASE("Destructor") {
+    using Type1 = std::expected<int, Error>;
+    using Type2 = std::expected<void, Error>;
+    using Type3 = std::expected<std::vector<int>, Error>;
+    using Type4 = std::expected<int, std::vector<int>>;
+    using Type5 = std::expected<void, std::vector<int>>;
+
+    static_assert(std::is_trivially_destructible_v<Type1>);
+    static_assert(std::is_trivially_destructible_v<Type2>);
+    static_assert(!std::is_trivially_destructible_v<Type3>);
+    static_assert(!std::is_trivially_destructible_v<Type4>);
+    static_assert(!std::is_trivially_destructible_v<Type5>);
+
+    // TODO: verify destructors for T and E are called
+}
+
 // TEST_CASE("expected constructors", "[expected]") {
 
 //     SECTION("default") {

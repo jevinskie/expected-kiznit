@@ -388,41 +388,16 @@ namespace mtl {
         constexpr const T* operator->() const {
             return std::addressof(this->_value);
         }
-
-        template <typename U = T>
-        requires(!std::is_void_v<T> && std::is_same_v<T, U>) constexpr T*
-        operator->() {
-            return std::addressof(this->_value);
-        }
-
-        template <typename U = T>
-        requires(!std::is_void_v<T> && std::is_same_v<T, U>) constexpr const U&
-        operator*() const& {
-            return this->_value;
-        }
-
-        template <typename U = T>
-        requires(!std::is_void_v<T> && std::is_same_v<T, U>) constexpr U&
-        operator*() & {
-            return this->_value;
-        }
-
-        template <typename U = T>
-        requires(!std::is_void_v<T> && std::is_same_v<T, U>) constexpr const U&&
-        operator*() const&& {
+        constexpr T* operator->() { return std::addressof(this->_value); }
+        constexpr const auto& operator*() const& { return this->_value; }
+        constexpr auto& operator*() & { return this->_value; }
+        constexpr const auto&& operator*() const&& {
             return std::move(this->_value);
         }
-
-        template <typename U = T>
-        requires(!std::is_void_v<T> && std::is_same_v<T, U>) constexpr U&&
-        operator*() && {
-            return std::move(this->_value);
-        }
-
+        constexpr auto&& operator*() && { return std::move(this->_value); }
         constexpr explicit operator bool() const noexcept {
             return this->_has_value;
         }
-
         constexpr bool has_value() const noexcept { return this->_has_value; }
 
         // TODO: unit tests for value()

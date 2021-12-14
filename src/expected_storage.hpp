@@ -40,9 +40,6 @@ namespace mtl {
 
     namespace detail {
 
-        struct no_init_t {};
-        inline constexpr no_init_t no_init;
-
         // expected_base
         template <typename T, typename E,
             bool value_is_trivially_destructible =
@@ -50,9 +47,6 @@ namespace mtl {
             bool error_is_trivially_destructible =
                 std::is_trivially_destructible_v<E>>
         struct expected_base {
-
-            constexpr expected_base(no_init_t)
-                : _has_value(false) {} // OK, E is trivially destructible
 
             template <typename = void>
             requires(
@@ -78,9 +72,6 @@ namespace mtl {
 
         template <typename T, typename E>
         struct expected_base<T, E, false, true> {
-
-            constexpr expected_base(no_init_t)
-                : _has_value(false) {} // OK, E is trivially destructible
 
             template <typename = void>
             requires(
@@ -111,9 +102,6 @@ namespace mtl {
         template <typename T, typename E>
         struct expected_base<T, E, true, false> {
 
-            constexpr expected_base(no_init_t)
-                : _has_value(true) {} // OK, T is trivially destructible
-
             template <typename = void>
             requires(
                 std::is_default_constructible_v<T>) constexpr expected_base()
@@ -143,30 +131,24 @@ namespace mtl {
         template <typename T, typename E>
         struct expected_base<T, E, false, false> {
 
-            constexpr expected_base(no_init_t) : _is_init(false) {}
-
             template <typename = void>
             requires(
                 std::is_default_constructible_v<T>) constexpr expected_base()
-                : _value(), _has_value(true), _is_init(true) {}
+                : _value(), _has_value(true) {}
 
             template <typename... Args>
             constexpr expected_base(in_place_t, Args&&... args)
-                : _value(std::forward<Args>(args)...), _has_value(true),
-                  _is_init(true) {}
+                : _value(std::forward<Args>(args)...), _has_value(true) {}
 
             template <typename... Args>
             constexpr expected_base(unexpect_t, Args&&... args)
-                : _error(std::forward<Args>(args)...), _has_value(false),
-                  _is_init(true) {}
+                : _error(std::forward<Args>(args)...), _has_value(false) {}
 
             ~expected_base() {
-                if (_is_init) {
-                    if (_has_value) {
-                        _value.~T();
-                    } else {
-                        _error.~unexpected<E>();
-                    }
+                if (_has_value) {
+                    _value.~T();
+                } else {
+                    _error.~unexpected<E>();
                 }
             }
 
@@ -175,15 +157,10 @@ namespace mtl {
                 unexpected<E> _error;
             };
             bool _has_value;
-            bool _is_init; // Do we want to merge _is_init with _has_value into
-                           // a tri-state? Seems a bit complicated...
         };
 
         template <typename E>
         struct expected_base<void, E, false, true> {
-
-            constexpr expected_base(no_init_t)
-                : _has_value(true) {} // OK: void has no destructor
 
             constexpr expected_base() : _has_value(true) {}
 
@@ -203,9 +180,6 @@ namespace mtl {
 
         template <typename E>
         struct expected_base<void, E, false, false> {
-
-            constexpr expected_base(no_init_t)
-                : _has_value(true) {} // OK: void has no destructor
 
             constexpr expected_base() : _has_value(true) {}
 
@@ -233,8 +207,7 @@ namespace mtl {
 
             using expected_base<T, E>::expected_base;
 
-            constexpr expected_storage(const expected_storage& rhs)
-                : expected_base<T, E>(no_init) {
+            constexpr expected_storage(const expected_storage& rhs) {
                 if (rhs._has_value) {
                     construct_value(rhs._value);
                 } else {
@@ -247,8 +220,7 @@ namespace mtl {
             // std::is_move_constructible_v<E>)
             constexpr expected_storage(expected_storage&& rhs) noexcept(
                 std::is_nothrow_move_constructible_v<T>&&
-                    std::is_nothrow_move_constructible_v<E>)
-                : expected_base<T, E>(no_init) {
+                    std::is_nothrow_move_constructible_v<E>) {
                 if (rhs._has_value) {
                     construct_value(std::move(rhs._value));
                 } else {
@@ -257,8 +229,7 @@ namespace mtl {
             }
 
             template <typename U, typename G>
-            expected_storage(const expected<U, G>& rhs)
-                : expected_base<T, E>(no_init) {
+            expected_storage(const expected<U, G>& rhs) {
                 if (bool(rhs)) {
                     construct_value(*rhs);
                 } else {
@@ -277,16 +248,15 @@ namespace mtl {
 
             template <typename... Args>
             constexpr void construct_value(Args&&... args) {
-                new (std::addressof(this->_value))
-                    T(std::forward<Args>(args)...);
-                this->_has_value = true;
+                new (std::addressof(_value)) T(std::forward<Args>(args)...);
+                _has_value = true;
             }
 
             template <typename... Args>
             constexpr void construct_error(Args&&... args) {
-                new (std::addressof(this->_error))
+                new (std::addressof(_error))
                     unexpected<E>(std::forward<Args>(args)...);
-                this->_has_value = false;
+                _has_value = false;
             }
         };
 
@@ -295,8 +265,7 @@ namespace mtl {
 
             using expected_base<void, E>::expected_base;
 
-            constexpr expected_storage(const expected_storage& rhs)
-                : expected_base<void, E>(no_init) {
+            constexpr expected_storage(const expected_storage& rhs) {
                 if (rhs._has_value) {
                     construct_value();
                 } else {
@@ -308,18 +277,16 @@ namespace mtl {
             // std::is_move_constructible_v<T>&&
             // std::is_move_constructible_v<E>)
             constexpr expected_storage(expected_storage&& rhs) noexcept(
-                std::is_nothrow_move_constructible_v<E>)
-                : expected_base<void, E>(no_init) {
+                std::is_nothrow_move_constructible_v<E>) {
                 if (rhs._has_value) {
-                    construct_value();
+                    construct_value());
                 } else {
                     construct_error(std::move(rhs._error.value()));
                 }
             }
 
             template <typename G>
-            expected_storage(const expected<void, G>& rhs)
-                : expected_base<void, E>(no_init) {
+            expected_storage(const expected<void, G>& rhs) {
                 if (bool(rhs)) {
                     construct_value();
                 } else {
@@ -328,22 +295,21 @@ namespace mtl {
             }
 
             template <typename G>
-            expected_storage(expected<void, G>&& rhs)
-                : expected_base<void, E>(no_init) {
+            expected_storage(expected<void, G>&& rhs) {
                 if (bool(rhs)) {
-                    construct_value();
+                    construct_value(std::move(*rhs));
                 } else {
                     construct_error(std::move(rhs.error()));
                 }
             }
 
-            constexpr void construct_value() { this->_has_value = true; }
+            constexpr void construct_value() { _has_value = true; }
 
             template <typename... Args>
             constexpr void construct_error(Args&&... args) {
-                new (std::addressof(this->_error))
+                new (std::addressof(_error))
                     unexpected<E>(std::forward<Args>(args)...);
-                this->_has_value = false;
+                _has_value = false;
             }
         };
 
