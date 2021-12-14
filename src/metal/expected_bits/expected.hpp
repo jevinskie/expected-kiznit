@@ -34,10 +34,6 @@ namespace mtl {
 
     using std::in_place;
 
-    // �.�.8 unexpect tag [expected.unexpect]
-    struct unexpect_t {};
-    inline constexpr unexpect_t unexpect;
-
     // �.�.4 Class template expected [expected.expected]
     template <typename T, typename E>
     requires(!std::is_same_v<T, unexpected<E>>) class expected
@@ -156,7 +152,7 @@ namespace mtl {
                  !std::is_same_v<std::remove_cvref_t<U>,
                      unexpected<E>>) explicit(!std::is_convertible_v<U&&,
                                               T>) constexpr expected(U&& v)
-            : detail::expected_storage<T, E>(std::forward<U>(v)) {}
+            : detail::expected_storage<T, E>(in_place, std::forward<U>(v)) {}
 
         //         template <typename G = E>
         //         requires(std::is_constructible_v<E, const G&>) explicit(
@@ -174,15 +170,14 @@ namespace mtl {
         //             construct_error(std::move(e));
         //         }
 
-        //         template <typename... Args>
-        //         requires((std::is_void_v<T> && sizeof...(Args) == 0) ||
-        //                  (!std::is_void_v<T> &&
-        //                      std::is_constructible_v<T,
-        //                          Args...>)) constexpr explicit
-        //                          expected(in_place_t,
-        //             Args&&... args) {
-        //             construct_value(std::forward<Args>(args)...);
-        //         }
+        template <typename... Args>
+        requires((std::is_void_v<T> && sizeof...(Args) == 0) ||
+                 (!std::is_void_v<T> &&
+                     std::is_constructible_v<T,
+                         Args...>)) constexpr explicit expected(in_place_t,
+            Args&&... args)
+            : detail::expected_storage<T, E>(
+                  in_place, std::forward<Args>(args)...) {}
 
         //         template <typename U, typename... Args>
         //         requires(!std::is_void_v<T> &&
@@ -193,12 +188,11 @@ namespace mtl {
         //             construct_value(il, std::forward<Args>(args)...);
         //         }
 
-        //         template <typename... Args>
-        //         requires(std::is_constructible_v<E,
-        //             Args...>) constexpr explicit expected(unexpect_t,
-        //             Args&&... args) { construct_error(in_place,
-        //             std::forward<Args>(args)...);
-        //         }
+        template <typename... Args>
+        requires(std::is_constructible_v<E,
+            Args...>) constexpr explicit expected(unexpect_t, Args&&... args)
+            : detail::expected_storage<T, E>(
+                  unexpect, std::forward<Args>(args)...) {}
 
         //         template <typename U, typename... Args>
         //         requires(std::is_constructible_v<E, initializer_list<U>&,
@@ -209,12 +203,14 @@ namespace mtl {
         //         }
 
         //  �.�.4.2 Destructor [expected.object.dtor]
-        // TODO: destructor tests, including trivial destructor functionality
+        // TODO: destructor tests, including trivial destructor
+        // functionality
         ~expected() = default;
 
         //         �.�.4.3 Assignment [expected.object.assign]
         //         template <typename = void>
-        //         requires((std::is_void_v<T> || (std::is_copy_assignable_v<T>
+        //         requires((std::is_void_v<T> ||
+        //         (std::is_copy_assignable_v<T>
         //         &&
         //                                            std::is_copy_constructible_v<T>))
         //                                            &&
@@ -223,14 +219,15 @@ namespace mtl {
 
         //             ) expected&
         //         operator=(
-        //             const expected& rhs) { // todo: noexcept() clause, not
-        //             specified
+        //             const expected& rhs) { // todo: noexcept() clause,
+        //             not specified
 
         //             if (bool(*this)) {
         //                 if (bool(rhs)) {
         //                     _value = *rhs;
         //                 } else {
-        //                     if (std::is_nothrow_copy_constructible_v<T>) {
+        //                     if (std::is_nothrow_copy_constructible_v<T>)
+        //                     {
         //                         _error.~unexpected<E>();
         //                         construct_value(*rhs);
         //                     } else if
@@ -255,7 +252,8 @@ namespace mtl {
         //                 }
         //             } else {
         //                 if (bool(rhs)) {
-        //                     if (std::is_nothrow_copy_constructible_v<E>) {
+        //                     if (std::is_nothrow_copy_constructible_v<E>)
+        //                     {
         //                         _value.~T();
         //                         construct_error(rhs.error());
         //                     } else if
@@ -470,19 +468,22 @@ namespace mtl {
                                : static_cast<T>(std::forward<U>(value));
         }
 
-        //         // �.�.4.6 Expected Equality operators [expected.equality_op]
-        //         template <typename T1, typename E1, typename T2, typename E2>
-        //         friend constexpr bool operator==(
-        //             const expected<T1, E1>& x, const expected<T2, E2>& y);
-        //         template <typename T1, typename E1, typename T2, typename E2>
-        //         friend constexpr bool operator!=(
-        //             const expected<T1, E1>& x, const expected<T2, E2>& y);
+        //         // �.�.4.6 Expected Equality operators
+        //         [expected.equality_op] template <typename T1, typename
+        //         E1, typename T2, typename E2> friend constexpr bool
+        //         operator==(
+        //             const expected<T1, E1>& x, const expected<T2, E2>&
+        //             y);
+        //         template <typename T1, typename E1, typename T2, typename
+        //         E2> friend constexpr bool operator!=(
+        //             const expected<T1, E1>& x, const expected<T2, E2>&
+        //             y);
 
         //         // �.�.4.7 Comparison with T [expected.comparison_T]
         //         template <typename T1, typename E1, typename T2>
         //         friend constexpr bool operator==(const expected<T1, E1>&,
-        //         const T2&); template <typename T1, typename E1, typename T2>
-        //         friend constexpr bool operator==(const T2&, const
+        //         const T2&); template <typename T1, typename E1, typename
+        //         T2> friend constexpr bool operator==(const T2&, const
         //         expected<T1, E1>&); template <typename T1, typename E1,
         //         typename T2> friend constexpr bool operator!=(const
         //         expected<T1, E1>&, const T2&); template <typename T1,
@@ -491,7 +492,8 @@ namespace mtl {
 
         //         // �.�.4.8 Comparison with unexpected<E>
         //         [expected.comparison_unexpected_E] template <typename T1,
-        //         typename E1, typename E2> friend constexpr bool operator==(
+        //         typename E1, typename E2> friend constexpr bool
+        //         operator==(
         //             const expected<T1, E1>&, const unexpected<E2>&);
         //         template <typename T1, typename E1, typename E2>
         //         friend constexpr bool operator==(
@@ -505,8 +507,8 @@ namespace mtl {
 
         //         // �.�.4.9 Specialized algorithms [expected.specalg]
         //         template <typename T1, typename E1>
-        //         friend void swap(expected<T1, E1>& x, expected<T1, E1>& y)
-        //         noexcept(
+        //         friend void swap(expected<T1, E1>& x, expected<T1, E1>&
+        //         y) noexcept(
         //             noexcept(x.swap(y)));
     };
 

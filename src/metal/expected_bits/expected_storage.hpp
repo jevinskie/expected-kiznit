@@ -31,6 +31,10 @@
 
 namespace mtl {
 
+    // �.�.8 unexpect tag [expected.unexpect]
+    struct unexpect_t {};
+    inline constexpr unexpect_t unexpect;
+
     template <typename T, typename E>
     requires(!std::is_same_v<T, unexpected<E>>) class expected;
 
@@ -66,11 +70,6 @@ namespace mtl {
                 }
             }
 
-            template <typename U = T>
-            constexpr expected_storage(U&& v) {
-                construct_value(std::forward<U>(v));
-            }
-
             template <typename U, typename G>
             expected_storage(const expected<U, G>& rhs) {
                 if (bool(rhs)) {
@@ -87,6 +86,16 @@ namespace mtl {
                 } else {
                     construct_error(std::move(rhs.error()));
                 }
+            }
+
+            template <typename... Args>
+            constexpr expected_storage(in_place_t, Args&&... args) {
+                construct_value(std::forward<Args>(args)...);
+            }
+
+            template <typename... Args>
+            constexpr expected_storage(unexpect_t, Args&&... args) {
+                construct_error(std::forward<Args>(args)...);
             }
 
             ~expected_storage() {
@@ -155,6 +164,13 @@ namespace mtl {
                 } else {
                     construct_error(std::move(rhs.error()));
                 }
+            }
+
+            constexpr expected_storage(in_place_t) { construct_value(); }
+
+            template <typename... Args>
+            constexpr expected_storage(unexpect_t, Args&&... args) {
+                construct_error(std::forward<Args>(args)...);
             }
 
             ~expected_storage() {

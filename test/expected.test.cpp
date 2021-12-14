@@ -259,6 +259,49 @@ TEST_CASE("Construct from value") {
     }
 }
 
+TEST_CASE("Construct using unexpected") {
+    // TODO: tests
+}
+
+TEST_CASE("Construct using in_place_t") {
+    SECTION("simple value") {
+        using Type = std::expected<int, Error>;
+        Type a(std::in_place, 312);
+
+        REQUIRE(a);
+        REQUIRE(*a == 312);
+    }
+
+    SECTION("void value") {
+        using Type = std::expected<void, Error>;
+        Type a(std::in_place);
+
+        REQUIRE(a);
+    }
+
+    // TODO: more tests
+}
+
+TEST_CASE("Construct using unexpect_t") {
+    SECTION("simple value") {
+        using Type = std::expected<int, Error>;
+        Type a(std::unexpect, Error::FlyingSquirrels);
+
+        REQUIRE(!a);
+        REQUIRE(a.error() == Error::FlyingSquirrels);
+    }
+
+    SECTION("void value") {
+        using Type = std::expected<void, Error>;
+        Type a(std::unexpect, Error::IOError);
+
+        REQUIRE(!a);
+        REQUIRE(a.error() == Error::IOError);
+    }
+
+    // TODO: more tests
+}
+
 // TEST_CASE("expected constructors", "[expected]") {
 
 //     SECTION("default") {
