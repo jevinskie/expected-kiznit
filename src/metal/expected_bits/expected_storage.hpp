@@ -138,6 +138,25 @@ namespace mtl {
                     construct_error(std::move(rhs._error.value()));
                 }
             }
+
+            template <typename G>
+            expected_storage(const expected<void, G>& rhs) {
+                if (bool(rhs)) {
+                    construct_value();
+                } else {
+                    construct_error(rhs.error());
+                }
+            }
+
+            template <typename G>
+            expected_storage(expected<void, G>&& rhs) {
+                if (bool(rhs)) {
+                    construct_value();
+                } else {
+                    construct_error(std::move(rhs.error()));
+                }
+            }
+
             ~expected_storage() {
                 if (!_has_value) {
                     _error.~unexpected<E>();

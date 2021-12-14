@@ -172,9 +172,20 @@ TEST_CASE("Conversion copy constructor") {
         REQUIRE(*b == 99);
     }
 
+    SECTION("Convert void to void") {
+        // TODO: need custom copyable and not moveable type for this test
+        using Type1 = std::expected<void, int>;
+        using Type2 = std::expected<void, long>;
+
+        const Type1 a;
+        const Type2 b(a);
+
+        REQUIRE(b);
+    }
+
     // TODO: convert G to E
 
-    // TODO: void G to E
+    // TODO: void convert G to E
 }
 
 TEST_CASE("Conversion move constructor") {
@@ -199,9 +210,20 @@ TEST_CASE("Conversion move constructor") {
         REQUIRE(*b == 32);
     }
 
-    // TODO: move G to E
+    SECTION("Move void to void") {
+        // TODO: need custom moveable and not copyable type for this test
+        using Type1 = std::expected<void, int>;
+        using Type2 = std::expected<void, long>;
+
+        Type1 a;
+        const Type2 b(std::move(a));
+
+        REQUIRE(b);
+    }
 
     // TODO: move G to E
+
+    // TODO: void move G to E
 }
 
 TEST_CASE("Construct from value") {
