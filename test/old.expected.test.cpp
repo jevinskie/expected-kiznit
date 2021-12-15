@@ -786,127 +786,134 @@ TEST_CASE("expected constructors", "[expected]") {
 //     }
 // }
 
-// TEST_CASE("�.�.4.4, modifiers", "[expected]") {
-//     SECTION("emplace() - has value") {
-//         mtl::expected<ComplexThing, Error> a{std::in_place, 3, 7};
+TEST_CASE("�.�.4.4, modifiers", "[expected]") {
+    SECTION("emplace() - void - has value") {
+        mtl::expected<void, Error> a;
 
-//         const auto& ref = a.emplace(6, 9);
+        a.emplace();
 
-//         REQUIRE(std::addressof(ref) == std::addressof(*a));
-//         REQUIRE(a->a == 6);
-//         REQUIRE(a->b == 9);
-//     }
+        REQUIRE(a);
+    }
 
-//     SECTION("emplace() - has error - path 1") {
-//         mtl::expected<IntValue, Error> a{mtl::unexpect, Error::FileNotFound};
-//         static_assert(
-//             std::is_nothrow_constructible_v<decltype(a)::value_type, int>);
+    SECTION("emplace() - void - has error") {
+        mtl::expected<void, IntValue> a(std::unexpect, 200);
 
-//         const auto& ref = a.emplace(77);
+        a.emplace();
 
-//         REQUIRE(std::addressof(ref) == std::addressof(*a));
-//         REQUIRE(a.value() == 77);
-//     }
+        REQUIRE(a);
+    }
 
-//     SECTION("emplace() - has error - path 2") {
-//         mtl::expected<std::vector<int>, Error> a{
-//             mtl::unexpect, Error::FileNotFound};
-//         static_assert(
-//             !std::is_nothrow_constructible_v<decltype(a)::value_type, int>);
-//         static_assert(
-//             std::is_nothrow_move_constructible_v<decltype(a)::value_type>);
+    SECTION("emplace() - has value") {
+        mtl::expected<ComplexThing, Error> a{std::in_place, 3, 7};
 
-//         const auto& ref = a.emplace(5);
+        const auto& ref = a.emplace(6, 9);
 
-//         REQUIRE(std::addressof(ref) == std::addressof(*a));
-//         REQUIRE(a.value().size() == 5);
-//     }
+        REQUIRE(std::addressof(ref) == std::addressof(*a));
+        REQUIRE(a->a == 6);
+        REQUIRE(a->b == 9);
+    }
 
-//     SECTION("emplace() - has error - path 3") {
-//         mtl::expected<NotNoThrowConstructible, Error> a{
-//             mtl::unexpect, Error::FileNotFound};
-//         static_assert(
-//             !std::is_nothrow_constructible_v<decltype(a)::value_type, int>);
-//         static_assert(
-//             !std::is_nothrow_move_constructible_v<decltype(a)::value_type>);
+    SECTION("emplace() - has error - path 1") {
+        mtl::expected<IntValue, Error> a{mtl::unexpect, Error::FileNotFound};
+        static_assert(
+            std::is_nothrow_constructible_v<decltype(a)::value_type, int>);
 
-//         const auto& ref = a.emplace(99);
+        const auto& ref = a.emplace(77);
 
-//         REQUIRE(std::addressof(ref) == std::addressof(*a));
-//         REQUIRE(a.value().value == 99);
-//     }
+        REQUIRE(std::addressof(ref) == std::addressof(*a));
+        REQUIRE(a.value() == 77);
+    }
 
-//     SECTION("emplace() - has error - path 3 - throws"){
-//         // TODO: same as path 3 above, but needs to throw on
-//         construction of
-//         // T(std::foward<Arg>(args)...)
-//     }
+    SECTION("emplace() - has error - path 2") {
+        mtl::expected<std::vector<int>, Error> a{
+            mtl::unexpect, Error::FileNotFound};
+        static_assert(
+            !std::is_nothrow_constructible_v<decltype(a)::value_type, int>);
+        static_assert(
+            std::is_nothrow_move_constructible_v<decltype(a)::value_type>);
 
-//     SECTION("emplace(initializer_list) - has value") {
-//         mtl::expected<ComplexThing, Error> a{std::in_place, 3, 7};
+        const auto& ref = a.emplace(5);
 
-//         const auto& ref = a.emplace({1, 2, 3}, 6, 9);
+        REQUIRE(std::addressof(ref) == std::addressof(*a));
+        REQUIRE(a.value().size() == 5);
+    }
 
-//         REQUIRE(std::addressof(ref) == std::addressof(*a));
-//         REQUIRE(a->list.size() == 3);
-//         REQUIRE(a->a == 6);
-//         REQUIRE(a->b == 9);
-//     }
+    SECTION("emplace() - has error - path 3") {
+        mtl::expected<NotNoThrowConstructible, Error> a{
+            mtl::unexpect, Error::FileNotFound};
+        static_assert(
+            !std::is_nothrow_constructible_v<decltype(a)::value_type, int>);
+        static_assert(
+            !std::is_nothrow_move_constructible_v<decltype(a)::value_type>);
 
-//     // TODO:
-//     // SECTION("emplace(initializer_list) - has error - path 1") {
-//     //     mtl::expected<ComplexThing, Error> a{mtl::unexpect,
-//     //                                           Error::FileNotFound};
-//     //     static_assert(
-//     //         std::is_nothrow_constructible_v<
-//     //             decltype(a)::value_type,
-//     // std::initializer_list<int>, int,
-//     //             int>);
+        const auto& ref = a.emplace(99);
 
-//     //     a.emplace({1, 2, 3}, 6, 9);
+        REQUIRE(std::addressof(ref) == std::addressof(*a));
+        REQUIRE(a.value().value == 99);
+    }
 
-//     //     // REQUIRE(std::addressof(ref) == std::addressof(*a));
-//     //     REQUIRE(a->list.size() == 3);
-//     //     REQUIRE(a->a == 6);
-//     //     REQUIRE(a->b == 9);
-//     // }
+    SECTION("emplace() - has error - path 3 - throws") {
+        // TODO: same as path 3 above, but needs to throw on construction of
+        // T(std::foward<Arg>(args)...)
+    }
 
-//     // TODO:
-//     // SECTION("emplace(initializer_list) - has error - path 2") {
-//     //     mtl::expected<ComplexThing, Error> a{mtl::unexpect,
-//     //                                           Error::FileNotFound};
-//     //     static_assert(
-//     //         !std::is_nothrow_constructible_v<
-//     //             decltype(a)::value_type,
-//     // std::initializer_list<int>, int,
-//     //             int>);
-//     //     static_assert(
-//     // std::is_nothrow_move_constructible_v<decltype(a)::value_type>);
+    SECTION("emplace(initializer_list) - has value") {
+        mtl::expected<ComplexThing, Error> a{std::in_place, 3, 7};
 
-//     //     a.emplace({1, 2, 3}, 6, 9);
+        const auto& ref = a.emplace({1, 2, 3}, 6, 9);
 
-//     //     // REQUIRE(std::addressof(ref) == std::addressof(*a));
-//     //     REQUIRE(a->list.size() == 3);
-//     //     REQUIRE(a->a == 6);
-//     //     REQUIRE(a->b == 9);
-//     // }
+        REQUIRE(std::addressof(ref) == std::addressof(*a));
+        REQUIRE(a->list.size() == 3);
+        REQUIRE(a->a == 6);
+        REQUIRE(a->b == 9);
+    }
 
-//     // SECTION("emplace(initializer_list) - has error - path 3") {
-//     // mtl::expected<ComplexThing, Error> a{
-//     //     mtl::unexpect, Error::FileNotFound};
-//     //
-//     static_assert(!std::is_nothrow_constructible_v<decltype(a)::value_type,
-//     //               std::initializer_list<int>, int, int>);
-//     // static_assert(
-//     //     !std::is_nothrow_move_constructible_v<decltype(a)::value_type>);
-//     // a.emplace({1, 2, 3}, 6, 9);
+    // SECTION("emplace(initializer_list) - has error - path 1") {
+    //     mtl::expected<ComplexThing, Error> a{
+    //         mtl::unexpect, Error::FileNotFound};
+    //     static_assert(std::is_nothrow_constructible_v<decltype(a)::value_type,
+    //         std::initializer_list<int>, int, int>);
 
-//     // // REQUIRE(std::addressof(ref) == std::addressof(*a));
-//     // REQUIRE(a->list.size() == 3);
-//     // REQUIRE(a->a == 6);
-//     // REQUIRE(a->b == 9);
-//     //}
-// }
+    //     a.emplace({1, 2, 3}, 6, 9);
+
+    //     // REQUIRE(std::addressof(ref) == std::addressof(*a));
+    //     REQUIRE(a->list.size() == 3);
+    //     REQUIRE(a->a == 6);
+    //     REQUIRE(a->b == 9);
+    // }
+
+    // SECTION("emplace(initializer_list) - has error - path 2") {
+    //     mtl::expected<ComplexThing, Error> a{
+    //         mtl::unexpect, Error::FileNotFound};
+    //     static_assert(!std::is_nothrow_constructible_v<decltype(a)::value_type,
+    //                   std::initializer_list<int>, int, int>);
+    //     static_assert(
+    //         std::is_nothrow_move_constructible_v<decltype(a)::value_type>);
+
+    //     a.emplace({1, 2, 3}, 6, 9);
+
+    //     // REQUIRE(std::addressof(ref) == std::addressof(*a));
+    //     REQUIRE(a->list.size() == 3);
+    //     REQUIRE(a->a == 6);
+    //     REQUIRE(a->b == 9);
+    // }
+
+    SECTION("emplace(initializer_list) - has error - path 3") {
+        mtl::expected<ComplexThing, Error> a{
+            mtl::unexpect, Error::FileNotFound};
+
+        static_assert(!std::is_nothrow_constructible_v<decltype(a)::value_type,
+                      std::initializer_list<int>, int, int>);
+        static_assert(
+            !std::is_nothrow_move_constructible_v<decltype(a)::value_type>);
+        a.emplace({1, 2, 3}, 6, 9);
+
+        // REQUIRE(std::addressof(ref) == std::addressof(*a));
+        REQUIRE(a->list.size() == 3);
+        REQUIRE(a->a == 6);
+        REQUIRE(a->b == 9);
+    }
+}
 
 TEST_CASE("�.�.4.5, swap", "[expected]") {
     // SECTION("swap two values") {

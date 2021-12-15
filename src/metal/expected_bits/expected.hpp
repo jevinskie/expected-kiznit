@@ -333,25 +333,23 @@ namespace mtl {
             detail::expected_storage<T, E>::swap(rhs);
         }
 
-        //         template <typename U = T, typename... Args,
-        //                   std::enable_if_t<!std::is_void_v<U>>*
-        //                   =
-        //                       nullptr>
-        //         U& emplace(Args&&... args) {
-        //             return
-        // base::emplace(std::forward<Args>(args)...);
-        //         }
+        template <typename = void>
+        requires(std::is_void_v<T>) void emplace() {
+            detail::expected_storage<T, E>::emplace();
+        }
 
-        //         template <typename U = T, typename V, typename...
-        // Args,
-        //                   std::enable_if_t<!std::is_void_v<U>>*
-        //                   =
-        //                       nullptr>
-        //         U& emplace(initializer_list<V> list, Args&&...
-        // args) {
-        //             return base::emplace(list,
-        //             std::forward<Args>(args)...);
-        //         }
+        template <typename... Args>
+        requires(!std::is_void_v<T>) auto& emplace(Args&&... args) {
+            return detail::expected_storage<T, E>::emplace(
+                std::forward<Args>(args)...);
+        }
+
+        template <typename U, typename... Args>
+        requires(!std::is_void_v<T>) auto& emplace(
+            initializer_list<U> il, Args&&... args) {
+            return detail::expected_storage<T, E>::emplace(
+                il, std::forward<Args>(args)...);
+        }
 
         // �.�.4.5 Observers [expected.object.observe]
         constexpr const T* operator->() const {

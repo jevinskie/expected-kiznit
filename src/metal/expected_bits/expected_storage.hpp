@@ -276,6 +276,62 @@ namespace mtl {
                 }
             }
 
+#if MTL_EXCEPTIONS
+            template <typename... Args>
+            requires(std::is_nothrow_constructible_v<T, Args...>) T& emplace(
+                Args&&... args) {
+                if (this->_has_value) {
+                    this->_value = T(std::forward<Args>(args)...);
+                } else {
+                    this->_error.~unexpected<E>();
+                    construct_value(std::forward<Args>(args)...);
+                }
+                return this->_value;
+            }
+
+            template <typename... Args>
+            requires(!std::is_nothrow_constructible_v<T, Args...> &&
+                     std::is_nothrow_move_constructible_v<T>)
+                T& emplace(Args&&... args) {
+                if (this->_has_value) {
+                    this->_value = T(std::forward<Args>(args)...);
+                } else {
+                    T temp(std::forward<Args>(args)...);
+                    this->_error.~unexpected<E>();
+                    construct_value(std::move(temp));
+                }
+                return this->_value;
+            }
+
+            template <typename... Args>
+            T& emplace(Args&&... args) {
+                if (this->_has_value) {
+                    this->_value = T(std::forward<Args>(args)...);
+                } else {
+                    unexpected<E> temp(std::move(this->_error));
+                    this->_error.~unexpected<E>();
+                    try {
+                        construct_value(std::forward<Args>(args)...);
+                    } catch (...) {
+                        construct_error(std::move(temp));
+                        throw;
+                    }
+                }
+                return this->_value;
+            }
+#else
+            template <typename... Args>
+            T& emplace(Args&&... args) {
+                if (this->_has_value) {
+                    this->_value = T(std::forward<Args>(args)...);
+                } else {
+                    this->_error.~unexpected<E>();
+                    construct_value(std::forward<Args>(args)...);
+                }
+                return this->_value;
+            }
+#endif
+
             template <typename... Args>
             constexpr void construct_value(Args&&... args) {
                 new (std::addressof(this->_value))
@@ -335,6 +391,13 @@ namespace mtl {
                     construct_value();
                 } else {
                     construct_error(std::move(rhs.error()));
+                }
+            }
+
+            void emplace() {
+                if (!this->_has_value) {
+                    this->_error.~unexpected<E>();
+                    this->_has_value = true;
                 }
             }
 
