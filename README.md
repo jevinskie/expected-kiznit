@@ -32,4 +32,4 @@ Yes it is. Although it is labelled as "preview", it is fully functional and used
 - Refactor/rewrite unit tests and get to 100% coverage
 - Support for C++17? C++14?
 - Fix formatting: clang-format cannot handle requires() properly
-- Handle trivially constructible/copyable/moveable/destructible/...
+- Optimize for trivial copy/move constructors and trivial copy/move assignments
