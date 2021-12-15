@@ -27,9 +27,7 @@
 
 #include <expected>
 #include <catch2/catch.hpp>
-#include "value.hpp"
-
-using namespace oldtests;
+#include "old.value.hpp"
 
 TEST_CASE("unexpected constructors", "[unexpected]") {
 

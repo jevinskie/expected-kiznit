@@ -468,148 +468,142 @@ namespace mtl {
                                : static_cast<T>(std::forward<U>(value));
         }
 
-        //         // �.�.4.6 Expected Equality operators
-        //         [expected.equality_op] template <typename T1, typename
-        //         E1, typename T2, typename E2> friend constexpr bool
-        //         operator==(
-        //             const expected<T1, E1>& x, const expected<T2, E2>&
-        //             y);
-        //         template <typename T1, typename E1, typename T2, typename
-        //         E2> friend constexpr bool operator!=(
-        //             const expected<T1, E1>& x, const expected<T2, E2>&
-        //             y);
+        // TODO: need to review all of the operators below
 
-        //         // �.�.4.7 Comparison with T [expected.comparison_T]
-        //         template <typename T1, typename E1, typename T2>
-        //         friend constexpr bool operator==(const expected<T1, E1>&,
-        //         const T2&); template <typename T1, typename E1, typename
-        //         T2> friend constexpr bool operator==(const T2&, const
-        //         expected<T1, E1>&); template <typename T1, typename E1,
-        //         typename T2> friend constexpr bool operator!=(const
-        //         expected<T1, E1>&, const T2&); template <typename T1,
-        //         typename E1, typename T2> friend constexpr bool
-        //         operator!=(const T2&, const expected<T1, E1>&);
+        // �.�.4.6 Expected Equality operators [expected.equality_op]
+        template <typename T1, typename E1, typename T2, typename E2>
+        friend constexpr bool operator==(
+            const expected<T1, E1>& x, const expected<T2, E2>& y);
+        template <typename T1, typename E1, typename T2, typename E2>
+        friend constexpr bool operator!=(
+            const expected<T1, E1>& x, const expected<T2, E2>& y);
 
-        //         // �.�.4.8 Comparison with unexpected<E>
-        //         [expected.comparison_unexpected_E] template <typename T1,
-        //         typename E1, typename E2> friend constexpr bool
-        //         operator==(
-        //             const expected<T1, E1>&, const unexpected<E2>&);
-        //         template <typename T1, typename E1, typename E2>
-        //         friend constexpr bool operator==(
-        //             const unexpected<E2>&, const expected<T1, E1>&);
-        //         template <typename T1, typename E1, typename E2>
-        //         friend constexpr bool operator!=(
-        //             const expected<T1, E1>&, const unexpected<E2>&);
-        //         template <typename T1, typename E1, typename E2>
-        //         friend constexpr bool operator!=(
-        //             const unexpected<E2>&, const expected<T1, E1>&);
+        // �.�.4.7 Comparison with T [expected.comparison_T]
+        template <typename T1, typename E1, typename T2>
+        friend constexpr bool operator==(const expected<T1, E1>&, const T2&);
+        template <typename T1, typename E1, typename T2>
+        friend constexpr bool operator==(const T2&, const expected<T1, E1>&);
+        template <typename T1, typename E1, typename T2>
+        friend constexpr bool operator!=(const expected<T1, E1>&, const T2&);
+        template <typename T1, typename E1, typename T2>
+        friend constexpr bool operator!=(const T2&, const expected<T1, E1>&);
 
-        //         // �.�.4.9 Specialized algorithms [expected.specalg]
-        //         template <typename T1, typename E1>
-        //         friend void swap(expected<T1, E1>& x, expected<T1, E1>&
-        //         y) noexcept(
-        //             noexcept(x.swap(y)));
+        // �.�.4.8 Comparison with unexpected<E>
+        // [expected.comparison_unexpected_E]
+        template <typename T1, typename E1, typename E2>
+        friend constexpr bool operator==(
+            const expected<T1, E1>&, const unexpected<E2>&);
+        template <typename T1, typename E1, typename E2>
+        friend constexpr bool operator==(
+            const unexpected<E2>&, const expected<T1, E1>&);
+        template <typename T1, typename E1, typename E2>
+        friend constexpr bool operator!=(
+            const expected<T1, E1>&, const unexpected<E2>&);
+        template <typename T1, typename E1, typename E2>
+        friend constexpr bool operator!=(
+            const unexpected<E2>&, const expected<T1, E1>&);
+
+        // �.�.4.9 Specialized algorithms [expected.specalg]
+        template <typename T1, typename E1>
+        friend void swap(expected<T1, E1>& x, expected<T1, E1>& y) noexcept(
+            noexcept(x.swap(y)));
     };
 
-    // template <typename T1, typename E1, typename T2, typename E2>
-    // constexpr bool operator==(const expected<T1, E1>& x,
-    //                           const expected<T2, E2>& y) {
-    //     if (bool(x))
-    //         return bool(y) && *x == *y;
-    //     else
-    //         return !bool(y) && x.error() == y.error();
-    // }
+    // TODO: need to review all of the operators below
 
-    // template <typename E1, typename T2, typename E2>
-    // constexpr bool operator==(const expected<void, E1>& x,
-    //                           const expected<T2, E2>& y) {
-    //     if (bool(x))
-    //         return false;
-    //     else
-    //         return !bool(y) && x.error() == y.error();
-    // }
+    template <typename T1, typename E1, typename T2, typename E2>
+    constexpr bool operator==(
+        const expected<T1, E1>& x, const expected<T2, E2>& y) {
+        if (bool(x))
+            return bool(y) && *x == *y;
+        else
+            return !bool(y) && x.error() == y.error();
+    }
 
-    // template <typename T1, typename E1, typename E2>
-    // constexpr bool operator==(const expected<T1, E1>& x,
-    //                           const expected<void, E2>& y) {
-    //     return y == x;
-    // }
+    template <typename E1, typename T2, typename E2>
+    constexpr bool operator==(
+        const expected<void, E1>& x, const expected<T2, E2>& y) {
+        if (bool(x))
+            return false;
+        else
+            return !bool(y) && x.error() == y.error();
+    }
 
-    // template <typename E1, typename E2>
-    // constexpr bool operator==(const expected<void, E1>& x,
-    //                           const expected<void, E2>& y) {
-    //     if (bool(x))
-    //         return bool(y);
-    //     else
+    template <typename T1, typename E1, typename E2>
+    constexpr bool operator==(
+        const expected<T1, E1>& x, const expected<void, E2>& y) {
+        return y == x;
+    }
 
-    //         return !bool(y) && x.error() == y.error();
-    // }
+    template <typename E1, typename E2>
+    constexpr bool operator==(
+        const expected<void, E1>& x, const expected<void, E2>& y) {
+        if (bool(x))
+            return bool(y);
+        else
 
-    // template <typename T1, typename E1, typename T2, typename E2>
-    // constexpr bool operator!=(const expected<T1, E1>& x,
-    //                           const expected<T2, E2>& y) {
-    //     return !(x == y);
-    // }
+            return !bool(y) && x.error() == y.error();
+    }
 
-    // template <typename T1, typename E1, typename T2>
-    // constexpr bool operator==(const expected<T1, E1>& x, const T2& y)
-    // {
-    //     return bool(x) ? *x == y : false;
-    // }
+    template <typename T1, typename E1, typename T2, typename E2>
+    constexpr bool operator!=(
+        const expected<T1, E1>& x, const expected<T2, E2>& y) {
+        return !(x == y);
+    }
 
-    // template <typename T1, typename E1, typename T2>
-    // constexpr bool operator==(const T2& x, const expected<T1, E1>& y)
-    // {
-    //     return y == x;
-    // }
+    template <typename T1, typename E1, typename T2>
+    constexpr bool operator==(const expected<T1, E1>& x, const T2& y) {
+        return bool(x) ? *x == y : false;
+    }
 
-    // template <typename T1, typename E1, typename T2>
-    // constexpr bool operator!=(const expected<T1, E1>& x, const T2& y)
-    // {
-    //     return !(x == y);
-    // }
+    template <typename T1, typename E1, typename T2>
+    constexpr bool operator==(const T2& x, const expected<T1, E1>& y) {
+        return y == x;
+    }
 
-    // template <typename T1, typename E1, typename T2>
-    // constexpr bool operator!=(const T2& x, const expected<T1, E1>& y)
-    // {
-    //     return !(x == y);
-    // }
+    template <typename T1, typename E1, typename T2>
+    constexpr bool operator!=(const expected<T1, E1>& x, const T2& y) {
+        return !(x == y);
+    }
 
-    // template <typename T1, typename E1, typename E2>
-    // constexpr bool operator==(const expected<T1, E1>& x,
-    //                           const unexpected<E2>& y) {
-    //     return bool(x) ? false : unexpected(x.error()) == y;
-    // }
+    template <typename T1, typename E1, typename T2>
+    constexpr bool operator!=(const T2& x, const expected<T1, E1>& y) {
+        return !(x == y);
+    }
 
-    // template <typename T1, typename E1, typename E2>
-    // constexpr bool operator==(const unexpected<E2>& x,
-    //                           const expected<T1, E1>& y) {
-    //     return y == x;
-    // }
+    template <typename T1, typename E1, typename E2>
+    constexpr bool operator==(
+        const expected<T1, E1>& x, const unexpected<E2>& y) {
+        return bool(x) ? false : unexpected(x.error()) == y;
+    }
 
-    // template <typename T1, typename E1, typename E2>
-    // constexpr bool operator!=(const expected<T1, E1>& x,
-    //                           const unexpected<E2>& y) {
-    //     return !(x == y);
-    // }
+    template <typename T1, typename E1, typename E2>
+    constexpr bool operator==(
+        const unexpected<E2>& x, const expected<T1, E1>& y) {
+        return y == x;
+    }
 
-    // template <typename T1, typename E1, typename E2>
-    // constexpr bool operator!=(const unexpected<E2>& x,
-    //                           const expected<T1, E1>& y) {
-    //     return !(x == y);
-    // }
+    template <typename T1, typename E1, typename E2>
+    constexpr bool operator!=(
+        const expected<T1, E1>& x, const unexpected<E2>& y) {
+        return !(x == y);
+    }
 
-    // template <typename T1, typename E1,
-    //           std::enable_if_t<
-    //               (std::is_void_v<std::remove_cvref_t<T1>> ||
-    // std::is_move_constructible_v<T1>)&&std::is_swappable_v<T1>
-    //                &&
-    //               std::is_move_constructible_v<E1> &&
-    //               std::is_swappable_v<E1>>* = nullptr>
-    // void swap(expected<T1, E1>& x,
-    //           expected<T1, E1>& y) noexcept(noexcept(x.swap(y))) {
-    //     x.swap(y);
-    // }
+    template <typename T1, typename E1, typename E2>
+    constexpr bool operator!=(
+        const unexpected<E2>& x, const expected<T1, E1>& y) {
+        return !(x == y);
+    }
+
+    template <typename T1, typename E1,
+        std::enable_if_t<
+            (std::is_void_v<std::remove_cvref_t<T1>> ||
+                std::is_move_constructible_v<T1>)&&std::is_swappable_v<T1> &&
+            std::is_move_constructible_v<E1> && std::is_swappable_v<E1>>* =
+            nullptr>
+    void swap(expected<T1, E1>& x, expected<T1, E1>& y) noexcept(
+        noexcept(x.swap(y))) {
+        x.swap(y);
+    }
 
 } // namespace mtl

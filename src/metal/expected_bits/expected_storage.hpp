@@ -267,7 +267,8 @@ namespace mtl {
             }
 
             template <typename U, typename G>
-            expected_storage(expected<U, G>&& rhs) {
+            expected_storage(expected<U, G>&& rhs)
+                : expected_base<T, E>(no_init) {
                 if (bool(rhs)) {
                     construct_value(std::move(*rhs));
                 } else {
