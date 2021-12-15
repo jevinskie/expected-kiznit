@@ -154,21 +154,17 @@ namespace mtl {
                                               T>) constexpr expected(U&& v)
             : detail::expected_storage<T, E>(in_place, std::forward<U>(v)) {}
 
-        //         template <typename G = E>
-        //         requires(std::is_constructible_v<E, const G&>) explicit(
-        //             !std::is_convertible_v<const G&,
-        //                 E>) constexpr expected(const unexpected<G>& e) {
-        //             construct_error(e);
-        //         }
+        template <typename G = E>
+        requires(std::is_constructible_v<E, const G&>) explicit(
+            !std::is_convertible_v<const G&,
+                E>) constexpr expected(const unexpected<G>& e)
+            : detail::expected_storage<T, E>(unexpect, e) {}
 
-        //         template <typename G = E>
-        //         requires(std::is_constructible_v<E, G&&>) explicit(
-        //             !std::is_convertible_v<G&&, E>) constexpr
-        //             expected(unexpected<G>&&
-        //                 e) noexcept(std::is_nothrow_constructible_v<E, G&&>)
-        //                 {
-        //             construct_error(std::move(e));
-        //         }
+        template <typename G = E>
+        requires(std::is_constructible_v<E, G&&>) explicit(
+            !std::is_convertible_v<G&&, E>) constexpr expected(unexpected<G>&&
+                e) noexcept(std::is_nothrow_constructible_v<E, G&&>)
+            : detail::expected_storage<T, E>(unexpect, std::move(e)) {}
 
         template <typename... Args>
         requires((std::is_void_v<T> && sizeof...(Args) == 0) ||
@@ -179,14 +175,13 @@ namespace mtl {
             : detail::expected_storage<T, E>(
                   in_place, std::forward<Args>(args)...) {}
 
-        //         template <typename U, typename... Args>
-        //         requires(!std::is_void_v<T> &&
-        //                  std::is_constructible_v<T, initializer_list<U>&,
-        //                      Args...>) constexpr explicit
-        //                      expected(in_place_t,
-        //             initializer_list<U> il, Args&&... args) {
-        //             construct_value(il, std::forward<Args>(args)...);
-        //         }
+        template <typename U, typename... Args>
+        requires(!std::is_void_v<T> &&
+                 std::is_constructible_v<T, initializer_list<U>&,
+                     Args...>) constexpr explicit expected(in_place_t,
+            initializer_list<U> il, Args&&... args)
+            : detail::expected_storage<T, E>(
+                  in_place, il, std::forward<Args>(args)...) {}
 
         template <typename... Args>
         requires(std::is_constructible_v<E,
@@ -194,17 +189,14 @@ namespace mtl {
             : detail::expected_storage<T, E>(
                   unexpect, std::forward<Args>(args)...) {}
 
-        //         template <typename U, typename... Args>
-        //         requires(std::is_constructible_v<E, initializer_list<U>&,
-        //             Args...>) constexpr explicit expected(unexpect_t,
-        //             initializer_list<U> il, Args&&... args) {
-        //             construct_error(in_place, il,
-        //             std::forward<Args>(args)...);
-        //         }
+        template <typename U, typename... Args>
+        requires(std::is_constructible_v<E, initializer_list<U>&,
+            Args...>) constexpr explicit expected(unexpect_t,
+            initializer_list<U> il, Args&&... args)
+            : detail::expected_storage<T, E>(
+                  unexpect, il, std::forward<Args>(args)...) {}
 
         //  �.�.4.2 Destructor [expected.object.dtor]
-        // TODO: destructor tests, including trivial destructor
-        // functionality
         ~expected() = default;
 
         //         �.�.4.3 Assignment [expected.object.assign]

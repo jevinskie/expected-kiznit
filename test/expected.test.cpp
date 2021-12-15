@@ -282,6 +282,18 @@ TEST_CASE("Construct using in_place_t") {
     // TODO: more tests
 }
 
+TEST_CASE("Constrcut using in_place_t and initializer_list") {
+    SECTION("no extra params") {
+        using Type = std::expected<std::vector<int>, Error>;
+        Type a(std::in_place, {1, 2, 3, 4});
+
+        REQUIRE(a);
+        REQUIRE(*a == std::vector<int>{1, 2, 3, 4});
+    }
+
+    // TODO: more tests, including with extra params
+}
+
 TEST_CASE("Construct using unexpect_t") {
     SECTION("simple value") {
         using Type = std::expected<int, Error>;
@@ -300,6 +312,18 @@ TEST_CASE("Construct using unexpect_t") {
     }
 
     // TODO: more tests
+}
+
+TEST_CASE("Constrcut using unexpect_t and initializer_list") {
+    SECTION("no extra params") {
+        using Type = std::expected<int, std::vector<int>>;
+        Type a(std::unexpect, {1, 2, 3, 4});
+
+        REQUIRE(!a);
+        REQUIRE(a.error() == std::vector<int>{1, 2, 3, 4});
+    }
+
+    // TODO: more tests, including with extra params
 }
 
 TEST_CASE("Destructor") {
