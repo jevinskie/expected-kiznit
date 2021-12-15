@@ -49,11 +49,8 @@ namespace mtl {
 
         // �.�.4.1 Constructors [expected.object.ctor]
         constexpr expected() = default;
-        constexpr expected(const expected& rhs) = default; // TODO: noexcept()?
-        constexpr expected(expected&& rhs) noexcept(
-            (std::is_void_v<T> ||
-                std::is_nothrow_move_constructible_v<
-                    T>)&&std::is_nothrow_move_constructible_v<E>) = default;
+        constexpr expected(const expected& rhs) = default;
+        constexpr expected(expected&& rhs) = default;
 
         template <typename U, typename G>
         requires(
@@ -196,130 +193,41 @@ namespace mtl {
             : detail::expected_storage<T, E>(
                   unexpect, in_place, il, std::forward<Args>(args)...) {}
 
-        //  �.�.4.2 Destructor [expected.object.dtor]
+        // �.�.4.2 Destructor [expected.object.dtor]
         ~expected() = default;
 
-        //         �.�.4.3 Assignment [expected.object.assign]
-        //         template <typename = void>
-        //         requires((std::is_void_v<T> ||
-        //         (std::is_copy_assignable_v<T>
-        //         &&
-        //                                            std::is_copy_constructible_v<T>))
-        //                                            &&
-        //                  std::is_copy_assignable_v<E> &&
-        //                  std::is_copy_constructible_v<E>
+        // �.�.4.3 Assignment [expected.object.assign]
+        expected& operator=(const expected&) = default;
+        expected& operator=(expected&&) = default;
 
-        //             ) expected&
-        //         operator=(
-        //             const expected& rhs) { // todo: noexcept() clause,
-        //             not specified
+        template <typename U = T, typename TT = T>
+        requires(!std::is_void_v<T> &&
+                 !std::is_same_v<expected<T, E>, std::remove_cvref_t<U>> &&
+                 !std::conjunction_v<std::is_scalar<T>,
+                     std::is_same<T, std::decay_t<U>>> &&
+                 std::is_constructible_v<T, U> &&
+                 std::is_assignable_v<TT&, U> &&
+                 std::is_nothrow_move_constructible_v<E>) expected&
+        operator=(U&& rhs) {
+            detail::expected_storage<T, E>::operator=(std::forward<U>(rhs));
+            return *this;
+        }
 
-        //             if (bool(*this)) {
-        //                 if (bool(rhs)) {
-        //                     _value = *rhs;
-        //                 } else {
-        //                     if (std::is_nothrow_copy_constructible_v<T>)
-        //                     {
-        //                         _error.~unexpected<E>();
-        //                         construct_value(*rhs);
-        //                     } else if
-        //                     (std::is_nothrow_move_constructible_v<T>) {
-        //                         T temp(*rhs);
-        //                         _error.~unexpected<E>();
-        //                         construct_value(std::move(temp));
-        //                     } else {
-        // #if MTL_EXCEPTIONS
-        //                         unexpected<E> temp(error());
-        //                         _error.~unexpected<E>();
-        //                         try {
-        //                             construct_value(*rhs);
-        //                         } catch (...) {
-        //                             constuct_error(std::move(temp));
-        //                             throw;
-        //                         }
-        // #else
-        //                         construct_value(*rhs);
-        // #endif
-        //                     }
-        //                 }
-        //             } else {
-        //                 if (bool(rhs)) {
-        //                     if (std::is_nothrow_copy_constructible_v<E>)
-        //                     {
-        //                         _value.~T();
-        //                         construct_error(rhs.error());
-        //                     } else if
-        //                     (std::is_nothrow_move_constructible_v<E>) {
-        //                         unexpected<E> temp(rhs.error());
-        //                         _value.~T();
-        //                         construct_error(std::move(temp));
-        //                     } else {
-        //                         T temp(*this);
-        //                         _value.~T();
-        // #if MTL_EXCEPTIONS
-        //                         try {
-        //                             construct_error(rhs.error());
-        //                         } catch (...) {
-        //                             construct_value(std::move(temp));
-        //                             throw;
-        //                         }
-        // #else
-        //                         construct_error(rhs.error());
-        // #endif
-        //                     }
-        //                 } else {
-        //                     _error = unexpected(rhs.error());
-        //                 }
-        //             }
-        //             return *this;
-        //         }
+        template <typename G = E>
+        requires(std::is_nothrow_copy_constructible_v<E>&&
+                std::is_copy_assignable_v<E>) expected&
+        operator=(const unexpected<G>& rhs) {
+            detail::expected_storage<T, E>::operator=(rhs);
+            return *this;
+        }
 
-        //         expected& operator=(expected&&) = default;
-        //         /*TODO noexcept(
-        //             std::is_nothrow_move_assignable_v<T>&&
-        // std::is_nothrow_move_constructible_v<T>);*/
-
-        //         template <typename U = T,
-        //                   std::enable_if_t<
-        //                       !std::is_void_v<U> &&
-        //                       !std::is_same_v<expected<T, E>,
-        //                       std::remove_cvref_t<U>> &&
-        // !std::conjunction_v<std::is_scalar<T>,
-        //                                           std::is_same<T,
-        // std::decay_t<U>>> &&
-        //                       std::is_constructible_v<T, U>
-        //                       /*TODO: && std::is_assignable_v<T&,U>*/
-        //                       /*TODO: &&
-        // std::is_nothrow_move_constructible_v<E>*/>*
-        //                       = nullptr>
-        //         expected& operator=(U&& other) {
-        //             base::operator=(std::forward<U>(other));
-        //             return *this;
-        //         }
-
-        //         template <typename G = E
-        //                   // TODO:,
-        //                   //
-        // std::enable_if_t<std::is_nothrow_copy_constructible_v<E>
-        //                   // && std::is_copy_assignable_v<E>>*
-        //=nullptr
-        //                   >
-        //         expected& operator=(const unexpected<G>& other) {
-        //             base::operator=(other);
-        //             return *this;
-        //         }
-
-        //         template <typename G = E
-        //                   // TODO:,
-        //                   //
-        // std::enable_if_t<std::is_nothrow_move_constructible_v<E>
-        //                   // && std::is_move_assignable_v<E>>*
-        //=nullptr
-        //                   >
-        //         expected& operator=(unexpected<G>&& other) {
-        // base::operator=(std::forward<unexpected<G>>(other));
-        //             return *this;
-        //         }
+        template <typename G = E>
+        requires(std::is_nothrow_move_constructible_v<E>&&
+                std::is_move_assignable_v<E>) expected&
+        operator=(unexpected<G>&& rhs) {
+            detail::expected_storage<T, E>::operator=(std::move(rhs));
+            return *this;
+        }
 
         // �.�.4.4 Modifiers [expected.object.modify]
         template <typename = void>
@@ -392,7 +300,6 @@ namespace mtl {
 
         constexpr bool has_value() const noexcept { return this->_has_value; }
 
-        // TODO: unit tests for value()
         template <typename U = T>
         requires(!std::is_void_v<T> &&
                  std::is_same_v<T, U>) constexpr const U& value() const& {
@@ -443,7 +350,6 @@ namespace mtl {
 
         constexpr E&& error() && { return std::move(this->_error.value()); }
 
-        // TODO: unit tests for value_or()
         template <typename U>
         requires(std::is_copy_constructible_v<T>&&
                 std::is_convertible_v<U&&, T>) constexpr T
@@ -459,8 +365,6 @@ namespace mtl {
             return bool(*this) ? std::move(**this)
                                : static_cast<T>(std::forward<U>(value));
         }
-
-        // TODO: revise all the of the following
 
         // �.�.4.6 Expected Equality operators [expected.equality_op]
         template <typename T1, typename E1, typename T2, typename E2>

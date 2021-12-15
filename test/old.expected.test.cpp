@@ -272,240 +272,240 @@ TEST_CASE("expected constructors", "[expected]") {
     }
 }
 
-// TEST_CASE("expected assignments", "[expected]") {
+TEST_CASE("expected assignments", "[expected]") {
 
-//     SECTION("assign value to value") {
-//         const mtl::expected<IntValue, Error> a{111};
-//         mtl::expected<IntValue, Error> b{222};
+    SECTION("assign value to value") {
+        const mtl::expected<IntValue, Error> a{111};
+        mtl::expected<IntValue, Error> b{222};
 
-//         b = a;
+        b = a;
 
-//         REQUIRE(a.has_value());
-//         REQUIRE(*a == 111);
-//         REQUIRE(b.has_value());
-//         REQUIRE(*b == 111);
-//     }
+        REQUIRE(a.has_value());
+        REQUIRE(*a == 111);
+        REQUIRE(b.has_value());
+        REQUIRE(*b == 111);
+    }
 
-//     SECTION("assign error to error") {
-//         const mtl::expected<IntValue, Error> a{
-//             mtl::unexpected(Error::FileNotFound)};
-//         mtl::expected<IntValue, Error> b{mtl::unexpected(Error::IOError)};
+    SECTION("assign error to error") {
+        const mtl::expected<IntValue, Error> a{
+            mtl::unexpected(Error::FileNotFound)};
+        mtl::expected<IntValue, Error> b{mtl::unexpected(Error::IOError)};
 
-//         b = a;
+        b = a;
 
-//         REQUIRE(!a.has_value());
-//         REQUIRE(a.error() == Error::FileNotFound);
-//         REQUIRE(!b.has_value());
-//         REQUIRE(b.error() == Error::FileNotFound);
-//     }
+        REQUIRE(!a.has_value());
+        REQUIRE(a.error() == Error::FileNotFound);
+        REQUIRE(!b.has_value());
+        REQUIRE(b.error() == Error::FileNotFound);
+    }
 
-//     SECTION("assign_value_to_error - is_nothrow_copy_constructible_v<>") {
-//         using type = mtl::expected<IntValue, Error>;
-//         static_assert(std::is_nothrow_copy_constructible_v<type::value_type>);
+    SECTION("assign_value_to_error - is_nothrow_copy_constructible_v<>") {
+        using type = mtl::expected<IntValue, Error>;
+        static_assert(std::is_nothrow_copy_constructible_v<type::value_type>);
 
-//         const type a{111};
-//         type b{mtl::unexpected(Error::FlyingSquirrels)};
+        const type a{111};
+        type b{mtl::unexpected(Error::FlyingSquirrels)};
 
-//         b = a;
+        b = a;
 
-//         REQUIRE(a.has_value());
-//         REQUIRE(*a == 111);
-//         REQUIRE(b.has_value());
-//         REQUIRE(*b == 111);
-//     }
+        REQUIRE(a.has_value());
+        REQUIRE(*a == 111);
+        REQUIRE(b.has_value());
+        REQUIRE(*b == 111);
+    }
 
-//     SECTION("assign_value_to_error - is_nothrow_move_constructible_v<>") {
-//         using type = mtl::expected<std::vector<int>, Error>;
+    SECTION("assign_value_to_error - is_nothrow_move_constructible_v<>") {
+        using type = mtl::expected<std::vector<int>, Error>;
 
-//         static_assert(!std::is_nothrow_copy_constructible_v<type::value_type>);
-//         static_assert(std::is_nothrow_move_constructible_v<type::value_type>);
+        static_assert(!std::is_nothrow_copy_constructible_v<type::value_type>);
+        static_assert(std::is_nothrow_move_constructible_v<type::value_type>);
 
-//         const type a(std::in_place, {1, 2, 3});
-//         type b{mtl::unexpected(Error::FlyingSquirrels)};
+        const type a(std::in_place, {1, 2, 3});
+        type b{mtl::unexpected(Error::FlyingSquirrels)};
 
-//         b = a;
+        b = a;
 
-//         REQUIRE(a.has_value());
-//         REQUIRE(a->size() == 3);
-//         REQUIRE(b.has_value());
-//         REQUIRE(b->size() == 3);
-//     }
+        REQUIRE(a.has_value());
+        REQUIRE(a->size() == 3);
+        REQUIRE(b.has_value());
+        REQUIRE(b->size() == 3);
+    }
 
-//     SECTION("assign_value_to_error - neither") {
-//         using type = mtl::expected<AssignableComplexThing, Error>;
+    SECTION("assign_value_to_error - neither") {
+        using type = mtl::expected<AssignableComplexThing, Error>;
 
-//         static_assert(!std::is_nothrow_copy_constructible_v<type::value_type>);
+        static_assert(!std::is_nothrow_copy_constructible_v<type::value_type>);
 
-//         static_assert(!std::is_nothrow_move_constructible_v<type::value_type>);
+        static_assert(!std::is_nothrow_move_constructible_v<type::value_type>);
 
-//         const type a{std::in_place, {1, 2, 3}, 45, 69};
-//         type b{mtl::unexpected(Error::FlyingSquirrels)};
+        const type a{std::in_place, {1, 2, 3}, 45, 69};
+        type b{mtl::unexpected(Error::FlyingSquirrels)};
 
-//         b = a;
+        b = a;
 
-//         REQUIRE(a.has_value());
-//         REQUIRE(a->a == 45);
-//         REQUIRE(a->b == 69);
-//         REQUIRE(a->list.size() == 3);
-//         REQUIRE(b.has_value());
-//         REQUIRE(b->a == 45);
-//         REQUIRE(b->b == 69);
-//         REQUIRE(b->list.size() == 3);
-//     }
+        REQUIRE(a.has_value());
+        REQUIRE(a->a == 45);
+        REQUIRE(a->b == 69);
+        REQUIRE(a->list.size() == 3);
+        REQUIRE(b.has_value());
+        REQUIRE(b->a == 45);
+        REQUIRE(b->b == 69);
+        REQUIRE(b->list.size() == 3);
+    }
 
-// #if MTL_EXCEPTIONS
-//     SECTION("assign_value_to_error - neither + throws exception on copy") {
-//         using type = mtl::expected<AssignableComplexThing, Error>;
+#if MTL_EXCEPTIONS
+    SECTION("assign_value_to_error - neither + throws exception on copy") {
+        using type = mtl::expected<AssignableComplexThing, Error>;
 
-//         static_assert(!std::is_nothrow_copy_constructible_v<type::value_type>);
+        static_assert(!std::is_nothrow_copy_constructible_v<type::value_type>);
 
-//         static_assert(!std::is_nothrow_move_constructible_v<type::value_type>);
+        static_assert(!std::is_nothrow_move_constructible_v<type::value_type>);
 
-//         const type a{std::in_place, {1, 2, 3}, 45, 69};
-//         type b{mtl::unexpected(Error::FlyingSquirrels)};
+        const type a{std::in_place, {1, 2, 3}, 45, 69};
+        type b{mtl::unexpected(Error::FlyingSquirrels)};
 
-//         const_cast<AssignableComplexThing&>(*a).throwsOnCopy = true;
-//         REQUIRE_THROWS_AS(b = a, std::exception);
+        const_cast<AssignableComplexThing&>(*a).throwsOnCopy = true;
+        REQUIRE_THROWS_AS(b = a, std::exception);
 
-//         REQUIRE(a.has_value());
-//         REQUIRE(a->a == 45);
-//         REQUIRE(a->b == 69);
-//         REQUIRE(a->list.size() == 3);
-//         REQUIRE(!b.has_value());
-//         REQUIRE(b.error() == Error::FlyingSquirrels);
-//     }
-// #endif
+        REQUIRE(a.has_value());
+        REQUIRE(a->a == 45);
+        REQUIRE(a->b == 69);
+        REQUIRE(a->list.size() == 3);
+        REQUIRE(!b.has_value());
+        REQUIRE(b.error() == Error::FlyingSquirrels);
+    }
+#endif
 
-//     SECTION("assign_error_to_value - is_nothrow_copy_constructible_v<>") {
-//         using type = mtl::expected<IntValue, Error>;
-//         static_assert(std::is_nothrow_copy_constructible_v<type::error_type>);
+    SECTION("assign_error_to_value - is_nothrow_copy_constructible_v<>") {
+        using type = mtl::expected<IntValue, Error>;
+        static_assert(std::is_nothrow_copy_constructible_v<type::error_type>);
 
-//         const type a{mtl::unexpected(Error::FlyingSquirrels)};
-//         type b{111};
+        const type a{mtl::unexpected(Error::FlyingSquirrels)};
+        type b{111};
 
-//         b = a;
+        b = a;
 
-//         REQUIRE(!a.has_value());
-//         REQUIRE(a.error() == Error::FlyingSquirrels);
-//         REQUIRE(!b.has_value());
-//         REQUIRE(b.error() == Error::FlyingSquirrels);
-//     }
+        REQUIRE(!a.has_value());
+        REQUIRE(a.error() == Error::FlyingSquirrels);
+        REQUIRE(!b.has_value());
+        REQUIRE(b.error() == Error::FlyingSquirrels);
+    }
 
-//     SECTION("assign_error_to_value - is_nothrow_move_constructible_v<>") {
-//         using type = mtl::expected<IntValue, std::vector<int>>;
+    SECTION("assign_error_to_value - is_nothrow_move_constructible_v<>") {
+        using type = mtl::expected<IntValue, std::vector<int>>;
 
-//         static_assert(!std::is_nothrow_copy_constructible_v<type::error_type>);
-//         static_assert(std::is_nothrow_move_constructible_v<type::error_type>);
+        static_assert(!std::is_nothrow_copy_constructible_v<type::error_type>);
+        static_assert(std::is_nothrow_move_constructible_v<type::error_type>);
 
-//         const type a{mtl::unexpected(std::vector<int>{1, 2, 3})};
-//         type b{222};
+        const type a{mtl::unexpected(std::vector<int>{1, 2, 3})};
+        type b{222};
 
-//         b = a;
+        b = a;
 
-//         REQUIRE(!a.has_value());
-//         REQUIRE(a.error().size() == 3);
-//         REQUIRE(!b.has_value());
-//         REQUIRE(b.error().size() == 3);
-//     }
+        REQUIRE(!a.has_value());
+        REQUIRE(a.error().size() == 3);
+        REQUIRE(!b.has_value());
+        REQUIRE(b.error().size() == 3);
+    }
 
-//     SECTION("assign_error_to_value - neither") {
-//         using type = mtl::expected<IntValue, AssignableComplexThing>;
+    SECTION("assign_error_to_value - neither") {
+        using type = mtl::expected<IntValue, AssignableComplexThing>;
 
-//         static_assert(!std::is_nothrow_copy_constructible_v<type::error_type>);
+        static_assert(!std::is_nothrow_copy_constructible_v<type::error_type>);
 
-//         static_assert(!std::is_nothrow_move_constructible_v<type::error_type>);
+        static_assert(!std::is_nothrow_move_constructible_v<type::error_type>);
 
-//         const type a{mtl::unexpected(
-//             AssignableComplexThing{std::vector<int>{1, 2, 3}, 45, 69})};
-//         type b{333};
+        const type a{mtl::unexpected(
+            AssignableComplexThing{std::vector<int>{1, 2, 3}, 45, 69})};
+        type b{333};
 
-//         b = a;
+        b = a;
 
-//         REQUIRE(!a.has_value());
-//         REQUIRE(a.error().a == 45);
-//         REQUIRE(a.error().b == 69);
-//         REQUIRE(a.error().list.size() == 3);
-//         REQUIRE(!b.has_value());
-//         REQUIRE(b.error().a == 45);
-//         REQUIRE(b.error().b == 69);
-//         REQUIRE(b.error().list.size() == 3);
-//     }
+        REQUIRE(!a.has_value());
+        REQUIRE(a.error().a == 45);
+        REQUIRE(a.error().b == 69);
+        REQUIRE(a.error().list.size() == 3);
+        REQUIRE(!b.has_value());
+        REQUIRE(b.error().a == 45);
+        REQUIRE(b.error().b == 69);
+        REQUIRE(b.error().list.size() == 3);
+    }
 
-// #if MTL_EXCEPTIONS
-//     SECTION("assign_error_to_value - neither + throws exception on copy") {
-//         using type = mtl::expected<IntValue, AssignableComplexThing>;
+#if MTL_EXCEPTIONS
+    SECTION("assign_error_to_value - neither + throws exception on copy") {
+        using type = mtl::expected<IntValue, AssignableComplexThing>;
 
-//         static_assert(!std::is_nothrow_copy_constructible_v<type::error_type>);
+        static_assert(!std::is_nothrow_copy_constructible_v<type::error_type>);
 
-//         static_assert(!std::is_nothrow_move_constructible_v<type::error_type>);
+        static_assert(!std::is_nothrow_move_constructible_v<type::error_type>);
 
-//         const type a{mtl::unexpected(
-//             AssignableComplexThing{std::vector<int>{1, 2, 3}, 45, 69})};
-//         type b{333};
+        const type a{mtl::unexpected(
+            AssignableComplexThing{std::vector<int>{1, 2, 3}, 45, 69})};
+        type b{333};
 
-//         const_cast<AssignableComplexThing&>(a.error()).throwsOnCopy = true;
-//         REQUIRE_THROWS_AS(b = a, std::exception);
+        const_cast<AssignableComplexThing&>(a.error()).throwsOnCopy = true;
+        REQUIRE_THROWS_AS(b = a, std::exception);
 
-//         REQUIRE(!a.has_value());
-//         REQUIRE(a.error().a == 45);
-//         REQUIRE(a.error().b == 69);
-//         REQUIRE(a.error().list.size() == 3);
-//         REQUIRE(b.has_value());
-//         REQUIRE(*b == 333);
-//     }
-// #endif
+        REQUIRE(!a.has_value());
+        REQUIRE(a.error().a == 45);
+        REQUIRE(a.error().b == 69);
+        REQUIRE(a.error().list.size() == 3);
+        REQUIRE(b.has_value());
+        REQUIRE(*b == 333);
+    }
+#endif
 
-//     SECTION("assign value to value - void specialization") {
-//         const mtl::expected<void, Error> a;
-//         mtl::expected<void, Error> b;
+    SECTION("assign value to value - void specialization") {
+        const mtl::expected<void, Error> a;
+        mtl::expected<void, Error> b;
 
-//         b = a;
+        b = a;
 
-//         REQUIRE(a.has_value());
-//         REQUIRE(b.has_value());
-//     }
+        REQUIRE(a.has_value());
+        REQUIRE(b.has_value());
+    }
 
-//     SECTION("assign error to error - void specialization") {
-//         const mtl::expected<void, Error> a{
-//             mtl::unexpected(Error::FileNotFound)};
-//         mtl::expected<void, Error> b{mtl::unexpected(Error::IOError)};
+    SECTION("assign error to error - void specialization") {
+        const mtl::expected<void, Error> a{
+            mtl::unexpected(Error::FileNotFound)};
+        mtl::expected<void, Error> b{mtl::unexpected(Error::IOError)};
 
-//         b = a;
+        b = a;
 
-//         REQUIRE(!a.has_value());
-//         REQUIRE(a.error() == Error::FileNotFound);
-//         REQUIRE(!b.has_value());
-//         REQUIRE(b.error() == Error::FileNotFound);
-//     }
+        REQUIRE(!a.has_value());
+        REQUIRE(a.error() == Error::FileNotFound);
+        REQUIRE(!b.has_value());
+        REQUIRE(b.error() == Error::FileNotFound);
+    }
 
-//     SECTION("assign value to error - void specialization") {
-//         using type = mtl::expected<void, AssignableComplexThing>;
-//         const type a{};
-//         type b{mtl::unexpect, {1, 2, 3}, 45, 69};
+    SECTION("assign value to error - void specialization") {
+        using type = mtl::expected<void, AssignableComplexThing>;
+        const type a{};
+        type b{mtl::unexpect, {1, 2, 3}, 45, 69};
 
-//         b = a;
+        b = a;
 
-//         REQUIRE(a.has_value());
-//         REQUIRE(b.has_value());
-//     }
+        REQUIRE(a.has_value());
+        REQUIRE(b.has_value());
+    }
 
-//     SECTION("error to value - void specialization") {
-//         using type = mtl::expected<void, AssignableComplexThing>;
-//         const type a{mtl::unexpect, {1, 2, 3}, 45, 69};
-//         type b{};
+    SECTION("error to value - void specialization") {
+        using type = mtl::expected<void, AssignableComplexThing>;
+        const type a{mtl::unexpect, {1, 2, 3}, 45, 69};
+        type b{};
 
-//         b = a;
+        b = a;
 
-//         REQUIRE(!a.has_value());
-//         REQUIRE(a.error().a == 45);
-//         REQUIRE(a.error().b == 69);
-//         REQUIRE(a.error().list.size() == 3);
-//         REQUIRE(!b.has_value());
-//         REQUIRE(b.error().a == 45);
-//         REQUIRE(b.error().b == 69);
-//         REQUIRE(b.error().list.size() == 3);
-//     }
-// }
+        REQUIRE(!a.has_value());
+        REQUIRE(a.error().a == 45);
+        REQUIRE(a.error().b == 69);
+        REQUIRE(a.error().list.size() == 3);
+        REQUIRE(!b.has_value());
+        REQUIRE(b.error().a == 45);
+        REQUIRE(b.error().b == 69);
+        REQUIRE(b.error().list.size() == 3);
+    }
+}
 
 // TEST_CASE("expected move assignments", "[expected]") {
 

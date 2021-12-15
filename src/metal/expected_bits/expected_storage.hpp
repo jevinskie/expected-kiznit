@@ -233,6 +233,8 @@ namespace mtl {
 
             using expected_base<T, E>::expected_base;
 
+            // TODO: noexcept() for copy/move constructor/assignments
+
             constexpr expected_storage(const expected_storage& rhs)
                 : expected_base<T, E>(no_init) {
                 if (rhs._has_value) {
@@ -332,6 +334,95 @@ namespace mtl {
             }
 #endif
 
+            expected_storage& operator=(const expected_storage& rhs)
+            // TODO: noexcept(std::is_nothrow_copy_constructible_v<T>&&
+            // std::is_nothrow_copy_constructible_v<E>)
+            {
+                if (this->_has_value) {
+                    if (rhs._has_value) {
+                        this->_value = rhs._value;
+                    } else {
+                        assign_error_to_value(rhs);
+                    }
+                } else {
+                    if (rhs._has_value) {
+                        assign_value_to_error(rhs);
+                    } else {
+                        this->_error = rhs._error;
+                    }
+                }
+                return *this;
+            }
+
+#if MTL_EXCEPTIONS
+            template <typename = void>
+            requires(std::is_nothrow_copy_constructible_v<
+                E>) void assign_error_to_value(const expected_storage& rhs) {
+                this->_value.~T();
+                construct_error(rhs._error.value());
+            }
+
+            template <typename = void>
+            requires(!std::is_nothrow_copy_constructible_v<E> &&
+                     std::is_nothrow_move_constructible_v<
+                         E>) void assign_error_to_value(const expected_storage&
+                    rhs) {
+                unexpected<E> temp(rhs._error.value());
+                this->_value.~T();
+                construct_error(std::move(temp));
+            }
+
+            void assign_error_to_value(const expected_storage& rhs) {
+                T temp(this->_value);
+                this->_value.~T();
+                try {
+                    construct_error(rhs._error.value());
+                } catch (...) {
+                    construct_value(std::move(temp));
+                    throw;
+                }
+            }
+
+            template <typename = void>
+            requires(std::is_nothrow_copy_constructible_v<
+                T>) void assign_value_to_error(const expected_storage& rhs) {
+                this->_error.~unexpected<E>();
+                construct_value(rhs._value);
+            }
+
+            template <typename = void>
+            requires(!std::is_nothrow_copy_constructible_v<T> &&
+                     std::is_nothrow_move_constructible_v<
+                         T>) void assign_value_to_error(const expected_storage&
+                    rhs) {
+                T temp(rhs._value);
+                this->_error.~unexpected<E>();
+                construct_value(std::move(temp));
+            }
+
+            void assign_value_to_error(const expected_storage& rhs) {
+                unexpected<E> temp(this->_error.value());
+                this->_error.~unexpected<E>();
+                try {
+                    construct_value(rhs._value);
+                } catch (...) {
+                    construct_error(std::move(temp));
+                    throw;
+                }
+            }
+
+#else
+            void assign_error_to_value(const expected_storage& rhs) {
+                this->_value.~T();
+                construct_error(rhs._error);
+            }
+
+            void assign_value_to_error(const expected_storage& rhs) {
+                this->_error.~unexpected<E>();
+                construct_value(rhs._value);
+            }
+#endif
+
             template <typename... Args>
             constexpr void construct_value(Args&&... args) {
                 new (std::addressof(this->_value))
@@ -351,6 +442,8 @@ namespace mtl {
         struct expected_storage<void, E> : expected_base<void, E> {
 
             using expected_base<void, E>::expected_base;
+
+            // TODO: noexcept() for copy/move constructor/assignments
 
             constexpr expected_storage(const expected_storage& rhs)
                 : expected_base<void, E>(no_init) {
@@ -401,6 +494,21 @@ namespace mtl {
                 }
             }
 
+            expected_storage& operator=(const expected_storage& rhs) {
+                if (this->_has_value) {
+                    if (!rhs._has_value) {
+                        construct_error(rhs._error.value());
+                    }
+                } else {
+                    if (rhs._has_value) {
+                        this->_error.~unexpected<E>();
+                        construct_value();
+                    } else {
+                        this->_error = rhs._error;
+                    }
+                }
+                return *this;
+            }
             constexpr void construct_value() { this->_has_value = true; }
 
             template <typename... Args>
@@ -426,10 +534,10 @@ namespace mtl {
                 const expected_default_constructors&) = default;
             expected_default_constructors(
                 expected_default_constructors&&) = default;
-            // expected_default_constructors& operator=(
-            //     const expected_default_constructors&) = default;
-            // expected_default_constructors& operator=(
-            //     expected_default_constructors&&) noexcept = default;
+            expected_default_constructors& operator=(
+                const expected_default_constructors&) = default;
+            expected_default_constructors& operator=(
+                expected_default_constructors&&) noexcept = default;
         };
 
         template <typename T, typename E>
@@ -439,10 +547,10 @@ namespace mtl {
                 const expected_default_constructors&) = delete;
             expected_default_constructors(
                 expected_default_constructors&&) = default;
-            // expected_default_constructors& operator=(
-            //     const expected_default_constructors&) = default;
-            // expected_default_constructors& operator=(
-            //     expected_default_constructors&&) noexcept = default;
+            expected_default_constructors& operator=(
+                const expected_default_constructors&) = default;
+            expected_default_constructors& operator=(
+                expected_default_constructors&&) noexcept = default;
         };
 
         template <typename T, typename E>
@@ -452,10 +560,10 @@ namespace mtl {
                 const expected_default_constructors&) = default;
             expected_default_constructors(
                 expected_default_constructors&&) = delete;
-            // expected_default_constructors& operator=(
-            //     const expected_default_constructors&) = default;
-            // expected_default_constructors& operator=(
-            //     expected_default_constructors&&) noexcept = default;
+            expected_default_constructors& operator=(
+                const expected_default_constructors&) = default;
+            expected_default_constructors& operator=(
+                expected_default_constructors&&) noexcept = default;
         };
 
         template <typename T, typename E>
@@ -465,10 +573,10 @@ namespace mtl {
                 const expected_default_constructors&) = delete;
             expected_default_constructors(
                 expected_default_constructors&&) = delete;
-            // expected_default_constructors& operator=(
-            //     const expected_default_constructors&) = default;
-            // expected_default_constructors& operator=(
-            //     expected_default_constructors&&) noexcept = default;
+            expected_default_constructors& operator=(
+                const expected_default_constructors&) = default;
+            expected_default_constructors& operator=(
+                expected_default_constructors&&) noexcept = default;
         };
 
     } // namespace detail

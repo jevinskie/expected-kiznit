@@ -128,7 +128,7 @@ struct ComplexThing {
 struct AssignableComplexThing : ComplexThing {
 
     template <typename... Args>
-    AssignableComplexThing(Args&&... args)
+    requires(sizeof...(Args) > 1) AssignableComplexThing(Args&&... args)
         : ComplexThing(std::forward<Args>(args)...) {}
 
     AssignableComplexThing(const AssignableComplexThing& other)
