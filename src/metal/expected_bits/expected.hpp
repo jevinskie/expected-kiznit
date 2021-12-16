@@ -200,13 +200,13 @@ namespace mtl {
         expected& operator=(const expected&) = default;
         expected& operator=(expected&&) = default;
 
-        template <typename U = T, typename TT = T>
+        template <typename U = T, typename V = T>
         requires(!std::is_void_v<T> &&
                  !std::is_same_v<expected<T, E>, std::remove_cvref_t<U>> &&
                  !std::conjunction_v<std::is_scalar<T>,
                      std::is_same<T, std::decay_t<U>>> &&
-                 std::is_constructible_v<T, U> &&
-                 std::is_assignable_v<TT&, U> &&
+                 std::is_constructible_v<T, U> && std::is_assignable_v<V&, U> &&
+                 std::is_same_v<T, V> &&
                  std::is_nothrow_move_constructible_v<E>) expected&
         operator=(U&& rhs) {
             detail::expected_storage<T, E>::operator=(std::forward<U>(rhs));

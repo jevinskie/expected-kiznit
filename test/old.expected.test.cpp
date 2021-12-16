@@ -696,95 +696,96 @@ TEST_CASE("expected assignments", "[expected]") {
 // #endif
 // }
 
-// TEST_CASE("expected other assignments", "[expected]") {
-//     SECTION("value") {
-//         mtl::expected<IntValue, Error> a{123};
-//         a = 456;
-//         REQUIRE(a.has_value());
-//         REQUIRE(*a == 456);
+TEST_CASE("expected other assignments", "[expected]") {
+    SECTION("value") {
+        mtl::expected<IntValue, Error> a{123};
+        a = 456;
+        REQUIRE(a.has_value());
+        REQUIRE(*a == 456);
 
-//         mtl::expected<IntValue, Error> b{
-//             mtl::unexpected(Error::FlyingSquirrels)};
-//         b = 789;
-//         REQUIRE(b.has_value());
-//         REQUIRE(*b == 789);
+        mtl::expected<IntValue, Error> b{
+            mtl::unexpected(Error::FlyingSquirrels)};
+        b = 789;
+        REQUIRE(b.has_value());
+        REQUIRE(*b == 789);
 
-//         using type = mtl::expected<NotNoThrowConstructible,
-//         IntMoveableValue>;
-//         static_assert(!std::is_nothrow_constructible_v<type::value_type,
-//                       NotNoThrowConstructible>);
-//         type c{mtl::unexpected(777)};
-//         c = NotNoThrowConstructible{44};
-//         REQUIRE(c.has_value());
-//         REQUIRE(c->value == 44);
+        //         using type = mtl::expected<NotNoThrowConstructible,
+        //         IntMoveableValue>;
+        //         static_assert(!std::is_nothrow_constructible_v<type::value_type,
+        //                       NotNoThrowConstructible>);
+        //         type c{mtl::unexpected(777)};
+        //         c = NotNoThrowConstructible{44};
+        //         REQUIRE(c.has_value());
+        //         REQUIRE(c->value == 44);
 
-// #if MTL_EXCEPTIONS
-//         // TODO: fix this test, we need a value_type that can throw on
-//         // construction
-//         type d{mtl::unexpected(666)};
-//         d.error().throwsOnMove = true;
-//         REQUIRE_THROWS_AS(d = NotNoThrowConstructible{55}, std::exception);
-//         REQUIRE(!d.has_value());
-//         REQUIRE(d.error() == 666);
-// #endif
-//     }
+        // #if MTL_EXCEPTIONS
+        //         // TODO: fix this test, we need a value_type that can throw
+        //         on
+        //         // construction
+        //         type d{mtl::unexpected(666)};
+        //         d.error().throwsOnMove = true;
+        //         REQUIRE_THROWS_AS(d = NotNoThrowConstructible{55},
+        //         std::exception); REQUIRE(!d.has_value()); REQUIRE(d.error()
+        //         == 666);
+        // #endif
+    }
 
-//     SECTION("unexpected - const&") {
-//         mtl::expected<IntValue, Error> a{123};
-//         auto a2 = mtl::unexpected(Error::FileNotFound);
-//         a = a2;
-//         REQUIRE(!a.has_value());
-//         REQUIRE(a.error() == Error::FileNotFound);
+    //     SECTION("unexpected - const&") {
+    //         mtl::expected<IntValue, Error> a{123};
+    //         auto a2 = mtl::unexpected(Error::FileNotFound);
+    //         a = a2;
+    //         REQUIRE(!a.has_value());
+    //         REQUIRE(a.error() == Error::FileNotFound);
 
-//         mtl::expected<IntValue, Error> b{mtl::unexpect, Error::IOError};
-//         auto b2 = mtl::unexpected(Error::FlyingSquirrels);
-//         b = b2;
-//         REQUIRE(!b.has_value());
-//         REQUIRE(b.error() == Error::FlyingSquirrels);
+    //         mtl::expected<IntValue, Error> b{mtl::unexpect, Error::IOError};
+    //         auto b2 = mtl::unexpected(Error::FlyingSquirrels);
+    //         b = b2;
+    //         REQUIRE(!b.has_value());
+    //         REQUIRE(b.error() == Error::FlyingSquirrels);
 
-//         mtl::expected<void, Error> c{};
-//         auto c2 = mtl::unexpected(Error::FileNotFound);
-//         c = c2;
-//         REQUIRE(!c.has_value());
-//         REQUIRE(c.error() == Error::FileNotFound);
+    //         mtl::expected<void, Error> c{};
+    //         auto c2 = mtl::unexpected(Error::FileNotFound);
+    //         c = c2;
+    //         REQUIRE(!c.has_value());
+    //         REQUIRE(c.error() == Error::FileNotFound);
 
-//         mtl::expected<void, Error> d{mtl::unexpect, Error::IOError};
-//         auto d2 = mtl::unexpected(Error::FlyingSquirrels);
-//         d = d2;
-//         REQUIRE(!d.has_value());
-//         REQUIRE(d.error() == Error::FlyingSquirrels);
-//     }
+    //         mtl::expected<void, Error> d{mtl::unexpect, Error::IOError};
+    //         auto d2 = mtl::unexpected(Error::FlyingSquirrels);
+    //         d = d2;
+    //         REQUIRE(!d.has_value());
+    //         REQUIRE(d.error() == Error::FlyingSquirrels);
+    //     }
 
-//     SECTION("unexpected - &&") {
-//         mtl::expected<IntValue, IntMoveableValue> a{123};
-//         auto a2 = mtl::unexpected(IntMoveableValue{1});
-//         a = std::move(a2);
-//         REQUIRE(!a.has_value());
-//         REQUIRE(a.error() == 1);
-//         REQUIRE(a2.value() == 0);
+    //     SECTION("unexpected - &&") {
+    //         mtl::expected<IntValue, IntMoveableValue> a{123};
+    //         auto a2 = mtl::unexpected(IntMoveableValue{1});
+    //         a = std::move(a2);
+    //         REQUIRE(!a.has_value());
+    //         REQUIRE(a.error() == 1);
+    //         REQUIRE(a2.value() == 0);
 
-//         mtl::expected<IntValue, IntMoveableValue> b{mtl::unexpect, -1};
-//         auto b2 = mtl::unexpected(IntMoveableValue{2});
-//         b = std::move(b2);
-//         REQUIRE(!b.has_value());
-//         REQUIRE(b.error() == 2);
-//         REQUIRE(b2.value() == 0);
+    //         mtl::expected<IntValue, IntMoveableValue> b{mtl::unexpect, -1};
+    //         auto b2 = mtl::unexpected(IntMoveableValue{2});
+    //         b = std::move(b2);
+    //         REQUIRE(!b.has_value());
+    //         REQUIRE(b.error() == 2);
+    //         REQUIRE(b2.value() == 0);
 
-//         mtl::expected<void, IntMoveableValue> c{};
-//         auto c2 = mtl::unexpected(IntMoveableValue{3});
-//         c = std::move(c2);
-//         REQUIRE(!c.has_value());
-//         REQUIRE(c.error() == 3);
-//         REQUIRE(c2.value() == 0);
+    //         mtl::expected<void, IntMoveableValue> c{};
+    //         auto c2 = mtl::unexpected(IntMoveableValue{3});
+    //         c = std::move(c2);
+    //         REQUIRE(!c.has_value());
+    //         REQUIRE(c.error() == 3);
+    //         REQUIRE(c2.value() == 0);
 
-//         mtl::expected<void, IntMoveableValue> d{mtl::unexpect, -2};
-//         auto d2 = mtl::unexpected(IntMoveableValue{4});
-//         d = std::move(d2);
-//         REQUIRE(!d.has_value());
-//         REQUIRE(d.error() == 4);
-//         REQUIRE(d2.value() == 0);
-//     }
-// }
+    //         mtl::expected<void, IntMoveableValue> d{mtl::unexpect, -2};
+    //         auto d2 = mtl::unexpected(IntMoveableValue{4});
+    //         d = std::move(d2);
+    //         REQUIRE(!d.has_value());
+    //         REQUIRE(d.error() == 4);
+    //         REQUIRE(d2.value() == 0);
+    //     }
+}
 
 TEST_CASE("�.�.4.4, modifiers", "[expected]") {
     SECTION("emplace() - void - has value") {
@@ -927,9 +928,9 @@ TEST_CASE("�.�.4.5, swap", "[expected]") {
     // }
 
     // SECTION("swap two errors") {
-    //     mtl::expected<IntValue, Error> a{mtl::unexpect, Error::FileNotFound};
-    //     mtl::expected<IntValue, Error> b{mtl::unexpect,
-    //     Error::FlyingSquirrels}; a.swap(b);
+    //     mtl::expected<IntValue, Error> a{mtl::unexpect,
+    //     Error::FileNotFound}; mtl::expected<IntValue, Error>
+    //     b{mtl::unexpect, Error::FlyingSquirrels}; a.swap(b);
 
     //     REQUIRE(a.error() == Error::FlyingSquirrels);
     //     REQUIRE(b.error() == Error::FileNotFound);
@@ -1003,7 +1004,8 @@ TEST_CASE("�.�.4.5, swap", "[expected]") {
 
     // SECTION("swap value and error - void specialization") {
     //     mtl::expected<void, Error> a{};
-    //     mtl::expected<void, Error> b{mtl::unexpect, Error::FlyingSquirrels};
+    //     mtl::expected<void, Error> b{mtl::unexpect,
+    //     Error::FlyingSquirrels};
 
     //     a.swap(b);
 
