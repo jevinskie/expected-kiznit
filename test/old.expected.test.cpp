@@ -507,194 +507,194 @@ TEST_CASE("expected assignments", "[expected]") {
     }
 }
 
-// TEST_CASE("expected move assignments", "[expected]") {
+TEST_CASE("expected move assignments", "[expected]") {
 
-//     SECTION("move value to value") {
-//         mtl::expected<IntMoveableValue, Error> a{111};
-//         mtl::expected<IntMoveableValue, Error> b{222};
+    SECTION("move value to value") {
+        mtl::expected<IntMoveableValue, Error> a{111};
+        mtl::expected<IntMoveableValue, Error> b{222};
 
-//         b = std::move(a);
+        b = std::move(a);
 
-//         REQUIRE(a.has_value());
-//         REQUIRE(*a == 0);
-//         REQUIRE(b.has_value());
-//         REQUIRE(*b == 111);
-//     }
+        REQUIRE(a.has_value());
+        REQUIRE(*a == 0);
+        REQUIRE(b.has_value());
+        REQUIRE(*b == 111);
+    }
 
-//     SECTION("move error to error") {
-//         mtl::expected<IntValue, IntMoveableValue> a{mtl::unexpected(14)};
-//         mtl::expected<IntValue, IntMoveableValue> b{mtl::unexpected(17)};
+    SECTION("move error to error") {
+        mtl::expected<IntValue, IntMoveableValue> a{mtl::unexpected(14)};
+        mtl::expected<IntValue, IntMoveableValue> b{mtl::unexpected(17)};
 
-//         b = std::move(a);
+        b = std::move(a);
 
-//         REQUIRE(!a.has_value());
-//         REQUIRE(a.error() == 0);
-//         REQUIRE(!b.has_value());
-//         REQUIRE(b.error() == 14);
-//     }
+        REQUIRE(!a.has_value());
+        REQUIRE(a.error() == 0);
+        REQUIRE(!b.has_value());
+        REQUIRE(b.error() == 14);
+    }
 
-//     SECTION("move_value_to_error - is_nothrow_move_constructible_v<>") {
-//         using type = mtl::expected<std::vector<int>, Error>;
-//         static_assert(std::is_nothrow_move_constructible_v<type::value_type>);
+    SECTION("move_value_to_error - is_nothrow_move_constructible_v<>") {
+        using type = mtl::expected<std::vector<int>, Error>;
+        static_assert(std::is_nothrow_move_constructible_v<type::value_type>);
 
-//         type a{std::in_place, {1, 2, 3}};
-//         type b{mtl::unexpected(Error::FlyingSquirrels)};
+        type a{std::in_place, {1, 2, 3}};
+        type b{mtl::unexpected(Error::FlyingSquirrels)};
 
-//         b = std::move(a);
+        b = std::move(a);
 
-//         REQUIRE(a.has_value());
-//         REQUIRE(a->empty());
-//         REQUIRE(b.has_value());
-//         REQUIRE(b->size() == 3);
-//     }
+        REQUIRE(a.has_value());
+        REQUIRE(a->empty());
+        REQUIRE(b.has_value());
+        REQUIRE(b->size() == 3);
+    }
 
-//     SECTION("move_value_to_error - fallback") {
-//         using type = mtl::expected<IntMoveableValue, Error>;
+    SECTION("move_value_to_error - fallback") {
+        using type = mtl::expected<IntMoveableValue, Error>;
 
-//         static_assert(!std::is_nothrow_move_constructible_v<type::value_type>);
+        static_assert(!std::is_nothrow_move_constructible_v<type::value_type>);
 
-//         type a{143};
-//         type b{mtl::unexpected(Error::FlyingSquirrels)};
+        type a{143};
+        type b{mtl::unexpected(Error::FlyingSquirrels)};
 
-//         b = std::move(a);
+        b = std::move(a);
 
-//         REQUIRE(a.has_value());
-//         REQUIRE(*a == 0);
-//         REQUIRE(b.has_value());
-//         REQUIRE(*b == 143);
-//     }
+        REQUIRE(a.has_value());
+        REQUIRE(*a == 0);
+        REQUIRE(b.has_value());
+        REQUIRE(*b == 143);
+    }
 
-// #if MTL_EXCEPTIONS
-//     SECTION("move_value_to_error - fallback - throws on move") {
-//         using type = mtl::expected<IntMoveableValue, Error>;
+#if MTL_EXCEPTIONS
+    SECTION("move_value_to_error - fallback - throws on move") {
+        using type = mtl::expected<IntMoveableValue, Error>;
 
-//         static_assert(!std::is_nothrow_move_constructible_v<type::value_type>);
+        static_assert(!std::is_nothrow_move_constructible_v<type::value_type>);
 
-//         type a{143};
-//         type b{mtl::unexpected(Error::FlyingSquirrels)};
+        type a{143};
+        type b{mtl::unexpected(Error::FlyingSquirrels)};
 
-//         a->throwsOnMove = true;
-//         REQUIRE_THROWS_AS(b = std::move(a), std::exception);
+        a->throwsOnMove = true;
+        REQUIRE_THROWS_AS(b = std::move(a), std::exception);
 
-//         REQUIRE(a.has_value());
-//         REQUIRE(*a == 143);
-//         REQUIRE(!b.has_value());
-//         REQUIRE(b.error() == Error::FlyingSquirrels);
-//     }
-// #endif
+        REQUIRE(a.has_value());
+        REQUIRE(*a == 143);
+        REQUIRE(!b.has_value());
+        REQUIRE(b.error() == Error::FlyingSquirrels);
+    }
+#endif
 
-//     SECTION("move_error_to_value - is_nothrow_move_constructible_v<>") {
-//         using type = mtl::expected<IntValue, std::vector<int>>;
-//         static_assert(std::is_nothrow_move_constructible_v<type::error_type>);
+    SECTION("move_error_to_value - is_nothrow_move_constructible_v<>") {
+        using type = mtl::expected<IntValue, std::vector<int>>;
+        static_assert(std::is_nothrow_move_constructible_v<type::error_type>);
 
-//         type a{mtl::unexpect, {1, 2, 3}};
-//         type b{123};
+        type a{mtl::unexpect, {1, 2, 3}};
+        type b{123};
 
-//         b = std::move(a);
+        b = std::move(a);
 
-//         REQUIRE(!a.has_value());
-//         REQUIRE(a.error().empty());
-//         REQUIRE(!b.has_value());
-//         REQUIRE(b.error().size() == 3);
-//     }
+        REQUIRE(!a.has_value());
+        REQUIRE(a.error().empty());
+        REQUIRE(!b.has_value());
+        REQUIRE(b.error().size() == 3);
+    }
 
-//     SECTION("move_error_to_value - fallback - throws on move") {
-//         using type = mtl::expected<IntValue, IntMoveableValue>;
+    SECTION("move_error_to_value - fallback - throws on move") {
+        using type = mtl::expected<IntValue, IntMoveableValue>;
 
-//         static_assert(!std::is_nothrow_move_constructible_v<type::error_type>);
+        static_assert(!std::is_nothrow_move_constructible_v<type::error_type>);
 
-//         type a{mtl::unexpect, 143};
-//         type b{732};
+        type a{mtl::unexpect, 143};
+        type b{732};
 
-//         b = std::move(a);
+        b = std::move(a);
 
-//         REQUIRE(!a.has_value());
-//         REQUIRE(*a == 0);
-//         REQUIRE(!b.has_value());
-//         REQUIRE(*b == 143);
-//     }
+        REQUIRE(!a.has_value());
+        REQUIRE(*a == 0);
+        REQUIRE(!b.has_value());
+        REQUIRE(*b == 143);
+    }
 
-// #if MTL_EXCEPTIONS
-//     SECTION("move_error_to_value - fallback - throws on move") {
-//         using type = mtl::expected<IntValue, IntMoveableValue>;
+#if MTL_EXCEPTIONS
+    SECTION("move_error_to_value - fallback - throws on move") {
+        using type = mtl::expected<IntValue, IntMoveableValue>;
 
-//         static_assert(!std::is_nothrow_move_constructible_v<type::error_type>);
+        static_assert(!std::is_nothrow_move_constructible_v<type::error_type>);
 
-//         type a{mtl::unexpect, 143};
-//         type b{732};
+        type a{mtl::unexpect, 143};
+        type b{732};
 
-//         a.error().throwsOnMove = true;
-//         REQUIRE_THROWS_AS(b = std::move(a), std::exception);
+        a.error().throwsOnMove = true;
+        REQUIRE_THROWS_AS(b = std::move(a), std::exception);
 
-//         REQUIRE(!a.has_value());
-//         REQUIRE(a.error() == 143);
-//         REQUIRE(b.has_value());
-//         REQUIRE(*b == 732);
-//     }
-// #endif
+        REQUIRE(!a.has_value());
+        REQUIRE(a.error() == 143);
+        REQUIRE(b.has_value());
+        REQUIRE(*b == 732);
+    }
+#endif
 
-//     SECTION("move value to value - void specialization") {
-//         mtl::expected<void, Error> a{};
-//         mtl::expected<void, Error> b{};
+    SECTION("move value to value - void specialization") {
+        mtl::expected<void, Error> a{};
+        mtl::expected<void, Error> b{};
 
-//         b = std::move(a);
+        b = std::move(a);
 
-//         REQUIRE(a.has_value());
-//         REQUIRE(b.has_value());
-//     }
+        REQUIRE(a.has_value());
+        REQUIRE(b.has_value());
+    }
 
-//     SECTION("move error to error - void specialization") {
-//         mtl::expected<void, IntMoveableValue> a{mtl::unexpected(14)};
-//         mtl::expected<void, IntMoveableValue> b{mtl::unexpected(17)};
+    SECTION("move error to error - void specialization") {
+        mtl::expected<void, IntMoveableValue> a{mtl::unexpected(14)};
+        mtl::expected<void, IntMoveableValue> b{mtl::unexpected(17)};
 
-//         b = std::move(a);
+        b = std::move(a);
 
-//         REQUIRE(!a.has_value());
-//         REQUIRE(a.error() == 0);
-//         REQUIRE(!b.has_value());
-//         REQUIRE(b.error() == 14);
-//     }
+        REQUIRE(!a.has_value());
+        REQUIRE(a.error() == 0);
+        REQUIRE(!b.has_value());
+        REQUIRE(b.error() == 14);
+    }
 
-//     SECTION("move_value_to_error - void specialization") {
-//         using type = mtl::expected<void, Error>;
-//         type a{};
-//         type b{mtl::unexpected(Error::FlyingSquirrels)};
+    SECTION("move_value_to_error - void specialization") {
+        using type = mtl::expected<void, Error>;
+        type a{};
+        type b{mtl::unexpected(Error::FlyingSquirrels)};
 
-//         b = std::move(a);
+        b = std::move(a);
 
-//         REQUIRE(a.has_value());
-//         REQUIRE(b.has_value());
-//     }
+        REQUIRE(a.has_value());
+        REQUIRE(b.has_value());
+    }
 
-//     SECTION("move_error_to_value - void specialization") {
-//         using type = mtl::expected<void, std::vector<int>>;
-//         type a{mtl::unexpect, {1, 2, 3}};
-//         type b{};
+    SECTION("move_error_to_value - void specialization") {
+        using type = mtl::expected<void, std::vector<int>>;
+        type a{mtl::unexpect, {1, 2, 3}};
+        type b{};
 
-//         b = std::move(a);
+        b = std::move(a);
 
-//         REQUIRE(!a.has_value());
-//         REQUIRE(a.error().empty());
-//         REQUIRE(!b.has_value());
-//         REQUIRE(b.error().size() == 3);
-//     }
+        REQUIRE(!a.has_value());
+        REQUIRE(a.error().empty());
+        REQUIRE(!b.has_value());
+        REQUIRE(b.error().size() == 3);
+    }
 
-// #if MTL_EXCEPTIONS
-//     SECTION("move_error_to_value - void specialization - throws on move") {
-//         using type = mtl::expected<void, IntMoveableValue>;
+#if MTL_EXCEPTIONS
+    SECTION("move_error_to_value - void specialization - throws on move") {
+        using type = mtl::expected<void, IntMoveableValue>;
 
-//         type a{mtl::unexpect, 143};
-//         type b{};
+        type a{mtl::unexpect, 143};
+        type b{};
 
-//         a.error().throwsOnMove = true;
-//         REQUIRE_THROWS_AS(b = std::move(a), std::exception);
+        a.error().throwsOnMove = true;
+        REQUIRE_THROWS_AS(b = std::move(a), std::exception);
 
-//         REQUIRE(!a.has_value());
-//         REQUIRE(a.error() == 143);
-//         REQUIRE(b.has_value());
-//     }
-// #endif
-// }
+        REQUIRE(!a.has_value());
+        REQUIRE(a.error() == 143);
+        REQUIRE(b.has_value());
+    }
+#endif
+}
 
 TEST_CASE("expected other assignments", "[expected]") {
     SECTION("value") {

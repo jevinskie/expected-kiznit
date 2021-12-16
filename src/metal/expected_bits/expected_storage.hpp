@@ -298,6 +298,23 @@ namespace mtl {
                 return *this;
             }
 
+            expected_storage& operator=(expected_storage&& rhs) {
+                if (this->_has_value) {
+                    if (rhs._has_value) {
+                        this->_value = std::move(rhs._value);
+                    } else {
+                        move_error_to_value(std::move(rhs));
+                    }
+                } else {
+                    if (rhs._has_value) {
+                        move_value_to_error(std::move(rhs));
+                    } else {
+                        this->_error = std::move(rhs._error);
+                    }
+                }
+                return *this;
+            }
+
 #if MTL_EXCEPTIONS
             template <typename U = T>
             requires(std::is_nothrow_constructible_v<T, U>) expected_storage&
@@ -466,6 +483,60 @@ namespace mtl {
             }
 #endif
 
+#if MTL_EXCEPTIONS
+
+            template <typename = void>
+            requires(std::is_nothrow_move_constructible_v<
+                E>) void move_error_to_value(expected_storage&& rhs) {
+                this->_value.~T();
+                construct_error(std::move(rhs._error));
+            }
+
+            template <typename = void>
+            void move_error_to_value(expected_storage&& rhs) {
+                T temp(std::move(this->_value));
+                this->_value.~T();
+                try {
+                    construct_error(std::move(rhs._error));
+                } catch (...) {
+                    construct_value(std::move(temp));
+                    throw;
+                }
+            }
+
+            template <typename = void>
+            requires(std::is_nothrow_move_constructible_v<
+                T>) void move_value_to_error(expected_storage&& rhs) {
+                this->_error.~unexpected<E>();
+                construct_value(std::move(rhs._value));
+            }
+
+            template <typename = void>
+            void move_value_to_error(expected_storage&& rhs) {
+                unexpected<E> temp(std::move(this->_error));
+                this->_error.~unexpected<E>();
+                try {
+                    construct_value(std::move(rhs._value));
+                } catch (...) {
+                    construct_error(std::move(temp));
+                    throw;
+                }
+            }
+#else
+
+            template <typename = void>
+            void move_error_to_value(expected_storage&& rhs) {
+                this->_value.~T();
+                construct_error(std::move(rhs._error));
+            }
+
+            template <typename = void>
+            void move_value_to_error(expected_storage&& rhs) {
+                this->_error.~unexpected<E>();
+                construct_value(std::move(rhs._value));
+            }
+#endif
+
             template <typename... Args>
             constexpr void construct_value(Args&&... args) {
                 new (std::addressof(this->_value))
@@ -541,6 +612,22 @@ namespace mtl {
                         construct_value();
                     } else {
                         this->_error = rhs._error;
+                    }
+                }
+                return *this;
+            }
+
+            expected_storage& operator=(expected_storage&& rhs) {
+                if (this->_has_value) {
+                    if (!rhs._has_value) {
+                        construct_error(std::move(rhs._error));
+                    }
+                } else {
+                    if (rhs._has_value) {
+                        this->_error.~unexpected<E>();
+                        construct_value();
+                    } else {
+                        this->_error = std::move(rhs._error);
                     }
                 }
                 return *this;
