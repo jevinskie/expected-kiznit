@@ -442,6 +442,66 @@ namespace mtl {
             }
 #endif
 
+            void swap(expected_storage& rhs) // TODO: noexcept()
+            {
+                if (this->_has_value) {
+                    if (rhs._has_value) {
+                        using std::swap;
+                        swap(this->_value, rhs._value);
+                    } else {
+                        swap_value_with_error(rhs);
+                    }
+                } else {
+                    if (rhs._has_value) {
+                        rhs.swap(*this);
+                    } else {
+                        using std::swap;
+                        swap(this->_error, rhs._error);
+                    }
+                }
+            }
+
+            template <typename = void>
+            requires(std::is_nothrow_move_constructible_v<
+                E>) void swap_value_with_error(expected_storage& rhs) {
+                unexpected<E> temp(std::move(rhs._error));
+                rhs._error.~unexpected<E>();
+
+#if MTL_EXCEPTIONS
+                try {
+                    rhs.construct_value(std::move(this->_value));
+                } catch (...) {
+                    rhs.construct_error(std::move(temp));
+                    throw;
+                }
+#else
+                rhs.construct_value(std::move(this->_value));
+#endif
+                this->_value.~T();
+                construct_error(std::move(temp));
+            }
+
+            template <typename = void>
+            requires(!std::is_nothrow_move_constructible_v<E> &&
+                     std::is_nothrow_move_constructible_v<
+                         T>) void swap_value_with_error(expected_storage& rhs) {
+                T temp(std::move(this->_value));
+                this->_value.~T();
+#if MTL_EXCEPTIONS
+                try {
+                    construct_error(std::move(rhs._error.value()));
+                } catch (...) {
+                    construct_value(std::move(temp));
+                    throw;
+                }
+#else
+                construct_error(std::move(rhs._error));
+#endif
+
+                rhs._error.~unexpected<E>();
+                rhs.construct_value(std::move(temp));
+            }
+
 #if MTL_EXCEPTIONS
             template <typename = void>
             requires(std::is_nothrow_copy_constructible_v<
@@ -685,6 +745,28 @@ namespace mtl {
                     this->_error = unexpected(std::move(e.value()));
                 }
                 return *this;
+            }
+
+            void swap(expected_storage& rhs) // TODO: noexcept()
+            {
+                if (this->_has_value) {
+                    if (!rhs._has_value) {
+                        swap_value_with_error(rhs);
+                    }
+                } else {
+                    if (rhs._has_value) {
+                        rhs.swap(*this);
+                    } else {
+                        using std::swap;
+                        swap(this->_error, rhs._error);
+                    }
+                }
+            }
+
+            void swap_value_with_error(expected_storage& rhs) {
+                construct_error(std::move(rhs._error)); // Can throw
+                rhs._error.~unexpected<E>();
+                rhs.construct_value();
             }
 
             void emplace() {

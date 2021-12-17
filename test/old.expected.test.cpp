@@ -759,9 +759,11 @@ TEST_CASE("expected other assignments", "[expected]") {
     SECTION("unexpected - &&") {
         mtl::expected<IntValue, IntMoveableValue> a{123};
         auto a2 = mtl::unexpected(IntMoveableValue{1});
-        // TODO: this appears to be optimied to use a constructor:
+        // TODO: this appears to be optimized to use a constructor:
         // expected(unexpected<E>&&) and do "the right thing", except it's not
-        // calling operator=()..., same for all 4 cases below
+        // calling operator=()..., same for all 4 cases below. We might need to
+        // define a custom type that is not move-constructible but is
+        // move-assignable.
         a = std::move(a2);
         REQUIRE(!a.has_value());
         REQUIRE(a.error() == 1);
@@ -920,118 +922,117 @@ TEST_CASE("�.�.4.4, modifiers", "[expected]") {
 }
 
 TEST_CASE("�.�.4.5, swap", "[expected]") {
-    // SECTION("swap two values") {
-    //     mtl::expected<IntValue, Error> a{123};
-    //     mtl::expected<IntValue, Error> b{456};
+    SECTION("swap two values") {
+        mtl::expected<IntValue, Error> a{123};
+        mtl::expected<IntValue, Error> b{456};
 
-    //     a.swap(b);
+        a.swap(b);
 
-    //     REQUIRE(a.value() == 456);
-    //     REQUIRE(b.value() == 123);
-    // }
+        REQUIRE(a.value() == 456);
+        REQUIRE(b.value() == 123);
+    }
 
-    // SECTION("swap two errors") {
-    //     mtl::expected<IntValue, Error> a{mtl::unexpect,
-    //     Error::FileNotFound}; mtl::expected<IntValue, Error>
-    //     b{mtl::unexpect, Error::FlyingSquirrels}; a.swap(b);
+    SECTION("swap two errors") {
+        mtl::expected<IntValue, Error> a{mtl::unexpect, Error::FileNotFound};
+        mtl::expected<IntValue, Error> b{mtl::unexpect, Error::FlyingSquirrels};
+        a.swap(b);
 
-    //     REQUIRE(a.error() == Error::FlyingSquirrels);
-    //     REQUIRE(b.error() == Error::FileNotFound);
-    // }
+        REQUIRE(a.error() == Error::FlyingSquirrels);
+        REQUIRE(b.error() == Error::FileNotFound);
+    }
 
-    // SECTION("swap value and error - path 1 - nothrow") {
-    //     using type = mtl::expected<IntValue, Error>;
-    //     type a{123};
-    //     type b{mtl::unexpect, Error::IOError};
-    //     static_assert(std::is_nothrow_move_constructible_v<type::error_type>);
+    SECTION("swap value and error - path 1 - nothrow") {
+        using type = mtl::expected<IntValue, Error>;
+        type a{123};
+        type b{mtl::unexpect, Error::IOError};
+        static_assert(std::is_nothrow_move_constructible_v<type::error_type>);
 
-    //     a.swap(b);
+        a.swap(b);
 
-    //     REQUIRE(a.error() == Error::IOError);
-    //     REQUIRE(b.value() == 123);
+        REQUIRE(a.error() == Error::IOError);
+        REQUIRE(b.value() == 123);
 
-    //     a.swap(b);
+        a.swap(b);
 
-    //     REQUIRE(a.value() == 123);
-    //     REQUIRE(b.error() == Error::IOError);
-    // }
+        REQUIRE(a.value() == 123);
+        REQUIRE(b.error() == Error::IOError);
+    }
 
-    // // TODO: SECTION("swap value and error - path 1 - throw")
+    // TODO: SECTION("swap value and error - path 1 - throw")
 
-    // SECTION("swap value and error - path 2 - nothrow") {
-    //     using type = mtl::expected<IntValue, IntMoveableValue>;
-    //     type a{123};
-    //     type b{mtl::unexpect, 456};
+    SECTION("swap value and error - path 2 - nothrow") {
+        using type = mtl::expected<IntValue, IntMoveableValue>;
+        type a{123};
+        type b{mtl::unexpect, 456};
 
-    //     static_assert(!std::is_nothrow_move_constructible_v<type::error_type>);
-    //     static_assert(std::is_nothrow_move_constructible_v<type::value_type>);
+        static_assert(!std::is_nothrow_move_constructible_v<type::error_type>);
+        static_assert(std::is_nothrow_move_constructible_v<type::value_type>);
 
-    //     a.swap(b);
+        a.swap(b);
 
-    //     REQUIRE(!a.has_value());
-    //     REQUIRE(a.error() == 456);
-    //     REQUIRE(b.has_value());
-    //     REQUIRE(*b == 123);
+        REQUIRE(!a.has_value());
+        REQUIRE(a.error() == 456);
+        REQUIRE(b.has_value());
+        REQUIRE(*b == 123);
 
-    //     a.swap(b);
+        a.swap(b);
 
-    //     REQUIRE(a.has_value());
-    //     REQUIRE(*a == 123);
-    //     REQUIRE(!b.has_value());
-    //     REQUIRE(b.error() == 456);
-    // }
+        REQUIRE(a.has_value());
+        REQUIRE(*a == 123);
+        REQUIRE(!b.has_value());
+        REQUIRE(b.error() == 456);
+    }
 
-    // // TODO: SECTION("swap value and error - path 2 - throw")
+    // TODO: SECTION("swap value and error - path 2 - throw")
 
-    // SECTION("swap two values - void specialization") {
-    //     mtl::expected<void, Error> a{};
-    //     mtl::expected<void, Error> b{};
+    SECTION("swap two values - void specialization") {
+        mtl::expected<void, Error> a{};
+        mtl::expected<void, Error> b{};
 
-    //     a.swap(b);
+        a.swap(b);
 
-    //     REQUIRE(a.has_value());
-    //     REQUIRE(b.has_value());
-    // }
+        REQUIRE(a.has_value());
+        REQUIRE(b.has_value());
+    }
 
-    // SECTION("swap two errors - void specialization") {
-    //     mtl::expected<void, Error> a{mtl::unexpect, Error::FileNotFound};
-    //     mtl::expected<void, Error> b{mtl::unexpect, Error::IOError};
+    SECTION("swap two errors - void specialization") {
+        mtl::expected<void, Error> a{mtl::unexpect, Error::FileNotFound};
+        mtl::expected<void, Error> b{mtl::unexpect, Error::IOError};
 
-    //     a.swap(b);
+        a.swap(b);
 
-    //     REQUIRE(!a.has_value());
-    //     REQUIRE(a.error() == Error::IOError);
-    //     REQUIRE(!b.has_value());
-    //     REQUIRE(b.error() == Error::FileNotFound);
-    // }
+        REQUIRE(!a.has_value());
+        REQUIRE(a.error() == Error::IOError);
+        REQUIRE(!b.has_value());
+        REQUIRE(b.error() == Error::FileNotFound);
+    }
 
-    // SECTION("swap value and error - void specialization") {
-    //     mtl::expected<void, Error> a{};
-    //     mtl::expected<void, Error> b{mtl::unexpect,
-    //     Error::FlyingSquirrels};
+    SECTION("swap value and error - void specialization") {
+        mtl::expected<void, Error> a{};
+        mtl::expected<void, Error> b{mtl::unexpect, Error::FlyingSquirrels};
 
-    //     a.swap(b);
+        a.swap(b);
 
-    //     REQUIRE(!a.has_value());
-    //     REQUIRE(a.error() == Error::FlyingSquirrels);
-    //     REQUIRE(b.has_value());
+        REQUIRE(!a.has_value());
+        REQUIRE(a.error() == Error::FlyingSquirrels);
+        REQUIRE(b.has_value());
 
-    //     a.swap(b);
+        a.swap(b);
 
-    //     REQUIRE(a.has_value());
-    //     REQUIRE(!b.has_value());
-    //     REQUIRE(b.error() == Error::FlyingSquirrels);
-    // }
+        REQUIRE(a.has_value());
+        REQUIRE(!b.has_value());
+        REQUIRE(b.error() == Error::FlyingSquirrels);
+    }
 
-    // SECTION("swap()") {
-    //     mtl::expected<IntValue, Error> a{123};
-    //     mtl::expected<IntValue, Error> b{456};
+    SECTION("swap()") {
+        mtl::expected<IntValue, Error> a{123};
+        mtl::expected<IntValue, Error> b{456};
 
-    //     std::swap(a, b);
+        std::swap(a, b);
 
-    //     REQUIRE(a == 456);
-    //     REQUIRE(b == 123);
-    // }
+        REQUIRE(a == 456);
+        REQUIRE(b == 123);
+    }
 }
 
 TEST_CASE("expected accessors", "[expected]") {

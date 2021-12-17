@@ -231,7 +231,8 @@ namespace mtl {
 
         // �.�.4.4 Modifiers [expected.object.modify]
         template <typename = void>
-        requires(std::is_swappable_v<T>&& std::is_swappable_v<E> &&
+        requires((std::is_void_v<T> ||
+                     std::is_swappable_v<T>)&&std::is_swappable_v<E> &&
                  (std::is_void_v<T> || std::is_move_constructible_v<T> ||
                      std::is_move_constructible_v<E>)) void swap(expected&
                 rhs) noexcept(std::is_nothrow_move_constructible_v<T>&&
