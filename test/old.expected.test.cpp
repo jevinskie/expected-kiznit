@@ -730,61 +730,64 @@ TEST_CASE("expected other assignments", "[expected]") {
         // #endif
     }
 
-    //     SECTION("unexpected - const&") {
-    //         mtl::expected<IntValue, Error> a{123};
-    //         auto a2 = mtl::unexpected(Error::FileNotFound);
-    //         a = a2;
-    //         REQUIRE(!a.has_value());
-    //         REQUIRE(a.error() == Error::FileNotFound);
+    SECTION("unexpected - const&") {
+        mtl::expected<IntValue, Error> a{123};
+        auto a2 = mtl::unexpected(Error::FileNotFound);
+        a = a2;
+        REQUIRE(!a.has_value());
+        REQUIRE(a.error() == Error::FileNotFound);
 
-    //         mtl::expected<IntValue, Error> b{mtl::unexpect, Error::IOError};
-    //         auto b2 = mtl::unexpected(Error::FlyingSquirrels);
-    //         b = b2;
-    //         REQUIRE(!b.has_value());
-    //         REQUIRE(b.error() == Error::FlyingSquirrels);
+        mtl::expected<IntValue, Error> b{mtl::unexpect, Error::IOError};
+        auto b2 = mtl::unexpected(Error::FlyingSquirrels);
+        b = b2;
+        REQUIRE(!b.has_value());
+        REQUIRE(b.error() == Error::FlyingSquirrels);
 
-    //         mtl::expected<void, Error> c{};
-    //         auto c2 = mtl::unexpected(Error::FileNotFound);
-    //         c = c2;
-    //         REQUIRE(!c.has_value());
-    //         REQUIRE(c.error() == Error::FileNotFound);
+        mtl::expected<void, Error> c{};
+        auto c2 = mtl::unexpected(Error::FileNotFound);
+        c = c2;
+        REQUIRE(!c.has_value());
+        REQUIRE(c.error() == Error::FileNotFound);
 
-    //         mtl::expected<void, Error> d{mtl::unexpect, Error::IOError};
-    //         auto d2 = mtl::unexpected(Error::FlyingSquirrels);
-    //         d = d2;
-    //         REQUIRE(!d.has_value());
-    //         REQUIRE(d.error() == Error::FlyingSquirrels);
-    //     }
+        mtl::expected<void, Error> d{mtl::unexpect, Error::IOError};
+        auto d2 = mtl::unexpected(Error::FlyingSquirrels);
+        d = d2;
+        REQUIRE(!d.has_value());
+        REQUIRE(d.error() == Error::FlyingSquirrels);
+    }
 
-    //     SECTION("unexpected - &&") {
-    //         mtl::expected<IntValue, IntMoveableValue> a{123};
-    //         auto a2 = mtl::unexpected(IntMoveableValue{1});
-    //         a = std::move(a2);
-    //         REQUIRE(!a.has_value());
-    //         REQUIRE(a.error() == 1);
-    //         REQUIRE(a2.value() == 0);
+    SECTION("unexpected - &&") {
+        mtl::expected<IntValue, IntMoveableValue> a{123};
+        auto a2 = mtl::unexpected(IntMoveableValue{1});
+        // TODO: this appears to be optimied to use a constructor:
+        // expected(unexpected<E>&&) and do "the right thing", except it's not
+        // calling operator=()..., same for all 4 cases below
+        a = std::move(a2);
+        REQUIRE(!a.has_value());
+        REQUIRE(a.error() == 1);
+        REQUIRE(a2.value() == 0);
 
-    //         mtl::expected<IntValue, IntMoveableValue> b{mtl::unexpect, -1};
-    //         auto b2 = mtl::unexpected(IntMoveableValue{2});
-    //         b = std::move(b2);
-    //         REQUIRE(!b.has_value());
-    //         REQUIRE(b.error() == 2);
-    //         REQUIRE(b2.value() == 0);
+        mtl::expected<IntValue, IntMoveableValue> b{mtl::unexpect, -1};
+        auto b2 = mtl::unexpected(IntMoveableValue{2});
+        b = std::move(b2);
+        REQUIRE(!b.has_value());
+        REQUIRE(b.error() == 2);
+        REQUIRE(b2.value() == 0);
 
-    //         mtl::expected<void, IntMoveableValue> c{};
-    //         auto c2 = mtl::unexpected(IntMoveableValue{3});
-    //         c = std::move(c2);
-    //         REQUIRE(!c.has_value());
-    //         REQUIRE(c.error() == 3);
-    //         REQUIRE(c2.value() == 0);
+        mtl::expected<void, IntMoveableValue> c{};
+        auto c2 = mtl::unexpected(IntMoveableValue{3});
+        c = std::move(c2);
+        REQUIRE(!c.has_value());
+        REQUIRE(c.error() == 3);
+        REQUIRE(c2.value() == 0);
 
-    //         mtl::expected<void, IntMoveableValue> d{mtl::unexpect, -2};
-    //         auto d2 = mtl::unexpected(IntMoveableValue{4});
-    //         d = std::move(d2);
-    //         REQUIRE(!d.has_value());
-    //         REQUIRE(d.error() == 4);
-    //         REQUIRE(d2.value() == 0);
-    //     }
+        mtl::expected<void, IntMoveableValue> d{mtl::unexpect, -2};
+        auto d2 = mtl::unexpected(IntMoveableValue{4});
+        d = std::move(d2);
+        REQUIRE(!d.has_value());
+        REQUIRE(d.error() == 4);
+        REQUIRE(d2.value() == 0);
+    }
 }
 
 TEST_CASE("�.�.4.4, modifiers", "[expected]") {

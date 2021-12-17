@@ -244,7 +244,7 @@ namespace mtl {
                 }
             }
 
-            // TODO: disable if not satisfied:
+            // TODO: disable if not satisfied (?)
             // std::is_move_constructible_v<T>&&
             // std::is_move_constructible_v<E>)
             constexpr expected_storage(expected_storage&& rhs) noexcept(
@@ -357,6 +357,34 @@ namespace mtl {
             }
 
 #endif
+
+            template <class G = E>
+            requires(std::is_nothrow_copy_constructible_v<E>&&
+                    std::is_copy_assignable_v<E>) expected_storage&
+            operator=(const unexpected<G>& e) {
+                if (this->_has_value) {
+                    this->_value.~T();
+                    construct_error(unexpected(e.value()));
+
+                } else {
+                    this->_error = unexpected(e.value());
+                }
+                return *this;
+            }
+
+            template <class G = E>
+            requires(std::is_nothrow_move_constructible_v<E>&&
+                    std::is_move_assignable_v<E>) expected_storage&
+            operator=(unexpected<G>&& e) {
+                if (this->_has_value) {
+                    this->_value.~T();
+                    construct_error(unexpected(std::move(e.value())));
+
+                } else {
+                    this->_error = unexpected(std::move(e.value()));
+                }
+                return *this;
+            }
 
 #if MTL_EXCEPTIONS
             template <typename... Args>
@@ -568,7 +596,7 @@ namespace mtl {
                 }
             }
 
-            // TODO: disable if not satisfied:
+            // TODO: disable if not satisfied (?)
             // std::is_move_constructible_v<T>&&
             // std::is_move_constructible_v<E>)
             constexpr expected_storage(expected_storage&& rhs) noexcept(
@@ -629,6 +657,32 @@ namespace mtl {
                     } else {
                         this->_error = std::move(rhs._error);
                     }
+                }
+                return *this;
+            }
+
+            template <class G = E>
+            requires(std::is_nothrow_copy_constructible_v<E>&&
+                    std::is_copy_assignable_v<E>) expected_storage&
+            operator=(const unexpected<G>& e) {
+                if (this->_has_value) {
+                    construct_error(unexpected(e.value()));
+
+                } else {
+                    this->_error = unexpected(e.value());
+                }
+                return *this;
+            }
+
+            template <class G = E>
+            requires(std::is_nothrow_move_constructible_v<E>&&
+                    std::is_move_assignable_v<E>) expected_storage&
+            operator=(unexpected<G>&& e) {
+                if (this->_has_value) {
+                    construct_error(unexpected(std::move(e.value())));
+
+                } else {
+                    this->_error = unexpected(std::move(e.value()));
                 }
                 return *this;
             }
