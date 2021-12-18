@@ -261,37 +261,28 @@ namespace kz {
         }
 
         // �.�.4.5 Observers [expected.object.observe]
-        constexpr const T* operator->() const {
+        constexpr const T* operator->() const requires(!std::is_void_v<T>) {
             return std::addressof(this->_value);
         }
 
-        template <typename U = T>
-        requires(!std::is_void_v<T> && std::is_same_v<T, U>) constexpr T*
-        operator->() {
+        constexpr T* operator->() requires(!std::is_void_v<T>) {
             return std::addressof(this->_value);
         }
 
-        template <typename U = T>
-        requires(!std::is_void_v<T> && std::is_same_v<T, U>) constexpr const U&
-        operator*() const& {
+        constexpr const auto& operator*() const& requires(!std::is_void_v<T>) {
             return this->_value;
         }
 
-        template <typename U = T>
-        requires(!std::is_void_v<T> && std::is_same_v<T, U>) constexpr U&
-        operator*() & {
+        constexpr auto& operator*() & requires(!std::is_void_v<T>) {
             return this->_value;
         }
 
-        template <typename U = T>
-        requires(!std::is_void_v<T> && std::is_same_v<T, U>) constexpr const U&&
-        operator*() const&& {
+        constexpr const auto&& operator*() const&& requires(
+            !std::is_void_v<T>) {
             return std::move(this->_value);
         }
 
-        template <typename U = T>
-        requires(!std::is_void_v<T> && std::is_same_v<T, U>) constexpr U&&
-        operator*() && {
+        constexpr auto&& operator*() && requires(!std::is_void_v<T>) {
             return std::move(this->_value);
         }
 
@@ -301,9 +292,7 @@ namespace kz {
 
         constexpr bool has_value() const noexcept { return this->_has_value; }
 
-        template <typename U = T>
-        requires(!std::is_void_v<T> &&
-                 std::is_same_v<T, U>) constexpr const U& value() const& {
+        constexpr const auto& value() const& requires(!std::is_void_v<T>) {
 #if KZ_EXCEPTIONS
             if (!*this)
                 throw bad_expected_access(error());
@@ -311,9 +300,7 @@ namespace kz {
             return this->_value;
         }
 
-        template <typename U = T>
-        requires(
-            !std::is_void_v<T> && std::is_same_v<T, U>) constexpr U& value() & {
+        constexpr auto& value() & requires(!std::is_void_v<T>) {
 #if KZ_EXCEPTIONS
             if (!*this)
                 throw bad_expected_access(error());
@@ -321,9 +308,7 @@ namespace kz {
             return this->_value;
         }
 
-        template <typename U = T>
-        requires(!std::is_void_v<T> &&
-                 std::is_same_v<T, U>) constexpr const U&& value() const&& {
+        constexpr const auto&& value() const&& requires(!std::is_void_v<T>) {
 #if KZ_EXCEPTIONS
             if (!*this)
                 throw bad_expected_access(error());
@@ -331,9 +316,7 @@ namespace kz {
             return std::move(this->_value);
         }
 
-        template <typename U = T>
-        requires(!std::is_void_v<T> &&
-                 std::is_same_v<T, U>) constexpr U&& value() && {
+        constexpr auto&& value() && requires(!std::is_void_v<T>) {
 #if KZ_EXCEPTIONS
             if (!*this)
                 throw bad_expected_access(error());
