@@ -64,7 +64,7 @@ struct MoveableValue {
     MoveableValue(T x) : value(x) {}
     MoveableValue(MoveableValue<T>&& x)
         : value(x.value), throwsOnMove(x.throwsOnMove) {
-#if MTL_EXCEPTIONS
+#if KZ_EXCEPTIONS
         if (throwsOnMove)
             throw std::exception();
 #endif
@@ -134,7 +134,7 @@ struct AssignableComplexThing : ComplexThing {
     AssignableComplexThing(const AssignableComplexThing& other)
         : ComplexThing(other.list, other.a, IntMoveableValue(other.b.value)),
           throwsOnCopy(other.throwsOnCopy) {
-#if MTL_EXCEPTIONS
+#if KZ_EXCEPTIONS
         if (throwsOnCopy)
             throw std::exception();
 #endif

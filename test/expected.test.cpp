@@ -35,7 +35,7 @@ TEST_CASE("expected types") {
     using T = std::expected<short, bool>;
     static_assert(std::is_same_v<T::value_type, short>);
     static_assert(std::is_same_v<T::error_type, bool>);
-    static_assert(std::is_same_v<T::unexpected_type, mtl::unexpected<bool>>);
+    static_assert(std::is_same_v<T::unexpected_type, kz::unexpected<bool>>);
 
     using U = std::expected<void, bool>;
     static_assert(std::is_void_v<U::value_type>);

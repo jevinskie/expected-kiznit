@@ -31,7 +31,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace mtl {
+namespace kz {
 
     using std::in_place_t;
     using std::initializer_list;
@@ -161,4 +161,4 @@ namespace mtl {
     template <typename E>
     unexpected(E) -> unexpected<E>;
 
-} // namespace mtl
+} // namespace kz

@@ -27,10 +27,10 @@
 
 #pragma once
 
-#include <metal/expected_bits/exception.hpp>
-#include <metal/expected_bits/expected_storage.hpp>
+#include <kz/expected_bits/exception.hpp>
+#include <kz/expected_bits/expected_storage.hpp>
 
-namespace mtl {
+namespace kz {
 
     using std::in_place;
 
@@ -304,7 +304,7 @@ namespace mtl {
         template <typename U = T>
         requires(!std::is_void_v<T> &&
                  std::is_same_v<T, U>) constexpr const U& value() const& {
-#if MTL_EXCEPTIONS
+#if KZ_EXCEPTIONS
             if (!*this)
                 throw bad_expected_access(error());
 #endif
@@ -314,7 +314,7 @@ namespace mtl {
         template <typename U = T>
         requires(
             !std::is_void_v<T> && std::is_same_v<T, U>) constexpr U& value() & {
-#if MTL_EXCEPTIONS
+#if KZ_EXCEPTIONS
             if (!*this)
                 throw bad_expected_access(error());
 #endif
@@ -324,7 +324,7 @@ namespace mtl {
         template <typename U = T>
         requires(!std::is_void_v<T> &&
                  std::is_same_v<T, U>) constexpr const U&& value() const&& {
-#if MTL_EXCEPTIONS
+#if KZ_EXCEPTIONS
             if (!*this)
                 throw bad_expected_access(error());
 #endif
@@ -334,7 +334,7 @@ namespace mtl {
         template <typename U = T>
         requires(!std::is_void_v<T> &&
                  std::is_same_v<T, U>) constexpr U&& value() && {
-#if MTL_EXCEPTIONS
+#if KZ_EXCEPTIONS
             if (!*this)
                 throw bad_expected_access(error());
 #endif
@@ -499,4 +499,4 @@ namespace mtl {
         x.swap(y);
     }
 
-} // namespace mtl
+} // namespace kz

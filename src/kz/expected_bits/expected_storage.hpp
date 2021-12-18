@@ -27,9 +27,9 @@
 
 #pragma once
 
-#include <metal/expected_bits/unexpected.hpp>
+#include <kz/expected_bits/unexpected.hpp>
 
-namespace mtl {
+namespace kz {
 
     // �.�.8 unexpect tag [expected.unexpect]
     struct unexpect_t {};
@@ -315,7 +315,7 @@ namespace mtl {
                 return *this;
             }
 
-#if MTL_EXCEPTIONS
+#if KZ_EXCEPTIONS
             template <typename U = T>
             requires(std::is_nothrow_constructible_v<T, U>) expected_storage&
             operator=(U&& rhs) {
@@ -386,7 +386,7 @@ namespace mtl {
                 return *this;
             }
 
-#if MTL_EXCEPTIONS
+#if KZ_EXCEPTIONS
             template <typename... Args>
             requires(std::is_nothrow_constructible_v<T, Args...>) T& emplace(
                 Args&&... args) {
@@ -467,7 +467,7 @@ namespace mtl {
                 unexpected<E> temp(std::move(rhs._error));
                 rhs._error.~unexpected<E>();
 
-#if MTL_EXCEPTIONS
+#if KZ_EXCEPTIONS
                 try {
                     rhs.construct_value(std::move(this->_value));
                 } catch (...) {
@@ -487,7 +487,7 @@ namespace mtl {
                          T>) void swap_value_with_error(expected_storage& rhs) {
                 T temp(std::move(this->_value));
                 this->_value.~T();
-#if MTL_EXCEPTIONS
+#if KZ_EXCEPTIONS
                 try {
                     construct_error(std::move(rhs._error.value()));
                 } catch (...) {
@@ -502,7 +502,7 @@ namespace mtl {
                 rhs.construct_value(std::move(temp));
             }
 
-#if MTL_EXCEPTIONS
+#if KZ_EXCEPTIONS
             template <typename = void>
             requires(std::is_nothrow_copy_constructible_v<
                 E>) void assign_error_to_value(const expected_storage& rhs) {
@@ -571,7 +571,7 @@ namespace mtl {
             }
 #endif
 
-#if MTL_EXCEPTIONS
+#if KZ_EXCEPTIONS
 
             template <typename = void>
             requires(std::is_nothrow_move_constructible_v<
@@ -847,4 +847,4 @@ namespace mtl {
         };
 
     } // namespace detail
-} // namespace mtl
+} // namespace kz

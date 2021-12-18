@@ -15,11 +15,9 @@ Testing is done using different versions of GCC, clang, mingw and MSVC. You can 
 - Works with or without C++ exceptions enabled.
 - Follows the [P0323R10](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2021/p0323r10.html) proposal as closely as possible.
 
-## namespace mtl
+## namespace std
 
-As part of the development efforts for Rainbow OS, I am developing a freestanding library for bare metal targets. This library is named "metal" to allude to bare metal and my love of heavy metal music. As part of metal, I was working on adding support for **expected** and decided it might be worth splitting it out into its own project. The namespace was originally "metal" but I found that name to be a bit too long in practice. This is when I settled for "mtl" which happens to also be the abbreviation of the city I was born in: Montréal.
-
-The current proposal for expected, [P0323R10](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2021/p0323r10.html), specifies that all the code should reside in namespace std. I would love to do so, but unfortunately **std::unexpected** conflicts with a deprecated function with the same name on multiple compiles (GCC 10-13, clang 11-13, mingw 10-11). For these reasons it is simply not possible to do so eveywhere when exceptions are enabled. If you still want to use **std::except** instead of **mtl::except**, you can do so by including **<expected>**. Everything that can be imported into the **std** namespace will be. `**std::unexpected** will become **std::unexpected_** where the conflict exists.
+The current proposal for expected, [P0323R10](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2021/p0323r10.html), specifies that all the code should reside in namespace std. I would love to do so, but unfortunately **std::unexpected** conflicts with a deprecated function with the same name on multiple compiles (GCC 10-13, clang 11-13, mingw 10-11). For these reasons it is simply not possible to do so eveywhere when exceptions are enabled. If you still want to use **std::except** instead of **kz::except**, you can do so by including **<expected>**. Everything that can be imported into the **std** namespace will be. `**std::unexpected** will become **std::unexpected_** where the conflict exists.
 
 ## Is this library ready for use?
 
