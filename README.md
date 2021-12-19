@@ -26,6 +26,5 @@ Yes it is. Although it is labelled as "preview", it is fully functional and used
 ## TODO
 - Generate code coverage and publish it somewhere?
 - Refactor/rewrite unit tests and get to 100% coverage
-- Support for C++17? C++14?
 - Fix formatting: clang-format cannot handle requires() properly
 - Optimize for trivial copy/move constructors and trivial copy/move assignments

@@ -40,15 +40,12 @@ namespace kz {
 
     namespace detail {
 
+        // TODO: remove no_init stuff, we shoudn't need it
         struct no_init_t {};
         inline constexpr no_init_t no_init;
 
         // expected_base
-        template <typename T, typename E,
-            bool value_is_trivially_destructible =
-                std::is_trivially_destructible_v<T>,
-            bool error_is_trivially_destructible =
-                std::is_trivially_destructible_v<E>>
+        template <typename T, typename E>
         struct expected_base {
 
             constexpr expected_base(no_init_t)
@@ -69,66 +66,25 @@ namespace kz {
 
             ~expected_base() = default;
 
-            union {
-                T _value;
-                unexpected<E> _error;
-            };
-            bool _has_value;
-        };
-
-        template <typename T, typename E>
-        struct expected_base<T, E, false, true> {
-
-            constexpr expected_base(no_init_t)
-                : _has_value(false) {} // OK, E is trivially destructible
-
-            template <typename = void>
-            requires(
-                std::is_default_constructible_v<T>) constexpr expected_base()
-                : _value(), _has_value(true) {}
-
-            template <typename... Args>
-            constexpr expected_base(in_place_t, Args&&... args)
-                : _value(std::forward<Args>(args)...), _has_value(true) {}
-
-            template <typename... Args>
-            constexpr expected_base(unexpect_t, Args&&... args)
-                : _error(std::forward<Args>(args)...), _has_value(false) {}
-
-            ~expected_base() {
+            ~expected_base() requires(!std::is_trivially_destructible_v<T> &&
+                                      std::is_trivially_destructible_v<E>) {
                 if (_has_value) {
                     _value.~T();
                 }
             }
 
-            union {
-                T _value;
-                unexpected<E> _error;
-            };
-            bool _has_value;
-        };
-
-        template <typename T, typename E>
-        struct expected_base<T, E, true, false> {
-
-            constexpr expected_base(no_init_t)
-                : _has_value(true) {} // OK, T is trivially destructible
-
-            template <typename = void>
-            requires(
-                std::is_default_constructible_v<T>) constexpr expected_base()
-                : _value(), _has_value(true) {}
-
-            template <typename... Args>
-            constexpr expected_base(in_place_t, Args&&... args)
-                : _value(std::forward<Args>(args)...), _has_value(true) {}
-
-            template <typename... Args>
-            constexpr expected_base(unexpect_t, Args&&... args)
-                : _error(std::forward<Args>(args)...), _has_value(false) {}
-
-            ~expected_base() {
+            ~expected_base() requires(std::is_trivially_destructible_v<T> &&
+                                      !std::is_trivially_destructible_v<E>) {
                 if (!_has_value) {
+                    _error.~unexpected<E>();
+                }
+            }
+
+            ~expected_base() requires(!std::is_trivially_destructible_v<T> &&
+                                      !std::is_trivially_destructible_v<E>) {
+                if (_has_value) {
+                    _value.~T();
+                } else {
                     _error.~unexpected<E>();
                 }
             }
@@ -140,47 +96,8 @@ namespace kz {
             bool _has_value;
         };
 
-        template <typename T, typename E>
-        struct expected_base<T, E, false, false> {
-
-            constexpr expected_base(no_init_t) : _is_init(false) {}
-
-            template <typename = void>
-            requires(
-                std::is_default_constructible_v<T>) constexpr expected_base()
-                : _value(), _has_value(true), _is_init(true) {}
-
-            template <typename... Args>
-            constexpr expected_base(in_place_t, Args&&... args)
-                : _value(std::forward<Args>(args)...), _has_value(true),
-                  _is_init(true) {}
-
-            template <typename... Args>
-            constexpr expected_base(unexpect_t, Args&&... args)
-                : _error(std::forward<Args>(args)...), _has_value(false),
-                  _is_init(true) {}
-
-            ~expected_base() {
-                if (_is_init) {
-                    if (_has_value) {
-                        _value.~T();
-                    } else {
-                        _error.~unexpected<E>();
-                    }
-                }
-            }
-
-            union {
-                T _value;
-                unexpected<E> _error;
-            };
-            bool _has_value;
-            bool _is_init; // Do we want to merge _is_init with _has_value into
-                           // a tri-state? Seems a bit complicated...
-        };
-
         template <typename E>
-        struct expected_base<void, E, false, true> {
+        struct expected_base<void, E> {
 
             constexpr expected_base(no_init_t)
                 : _has_value(true) {} // OK: void has no destructor
@@ -195,27 +112,7 @@ namespace kz {
 
             ~expected_base() = default;
 
-            union {
-                unexpected<E> _error;
-            };
-            bool _has_value;
-        };
-
-        template <typename E>
-        struct expected_base<void, E, false, false> {
-
-            constexpr expected_base(no_init_t)
-                : _has_value(true) {} // OK: void has no destructor
-
-            constexpr expected_base() : _has_value(true) {}
-
-            constexpr expected_base(in_place_t) : _has_value(true) {}
-
-            template <typename... Args>
-            constexpr expected_base(unexpect_t, Args&&... args)
-                : _error(std::forward<Args>(args)...), _has_value(false) {}
-
-            ~expected_base() {
+            ~expected_base() requires(!std::is_trivially_destructible_v<E>) {
                 if (!_has_value) {
                     _error.~unexpected<E>();
                 }
