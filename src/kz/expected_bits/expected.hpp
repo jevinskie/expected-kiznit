@@ -32,8 +32,6 @@
 
 namespace kz {
 
-    using std::in_place;
-
     // �.�.4 Class template expected [expected.expected]
     template <typename T, typename E>
     requires(!std::is_same_v<T, unexpected<E>>) class expected

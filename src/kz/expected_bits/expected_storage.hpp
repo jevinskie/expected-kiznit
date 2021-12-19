@@ -31,6 +31,8 @@
 
 namespace kz {
 
+    using std::in_place;
+
     // �.�.8 unexpect tag [expected.unexpect]
     struct unexpect_t {};
     inline constexpr unexpect_t unexpect;
@@ -128,7 +130,16 @@ namespace kz {
         template <typename T, typename E>
         struct expected_storage : expected_base<T, E> {
 
-            using expected_base<T, E>::expected_base;
+            // using expected_base<T, E>::expected_base;
+            constexpr expected_storage() = default;
+
+            template <typename... Args>
+            constexpr expected_storage(in_place_t, Args&&... args)
+                : expected_base<T, E>(in_place, std::forward<Args>(args)...) {}
+
+            template <typename... Args>
+            constexpr expected_storage(unexpect_t, Args&&... args)
+                : expected_base<T, E>(unexpect, std::forward<Args>(args)...) {}
 
             // TODO: noexcept() for copy/move constructor/assignments
 
@@ -211,6 +222,8 @@ namespace kz {
                 }
                 return *this;
             }
+
+            ~expected_storage() = default;
 
 #if KZ_EXCEPTIONS
             template <typename U = T>
@@ -540,7 +553,17 @@ namespace kz {
         template <typename E>
         struct expected_storage<void, E> : expected_base<void, E> {
 
-            using expected_base<void, E>::expected_base;
+            // using expected_base<void, E>::expected_base;
+            constexpr expected_storage() = default;
+
+            template <typename... Args>
+            constexpr expected_storage(in_place_t)
+                : expected_base<void, E>(in_place) {}
+
+            template <typename... Args>
+            constexpr expected_storage(unexpect_t, Args&&... args)
+                : expected_base<void, E>(
+                      unexpect, std::forward<Args>(args)...) {}
 
             // TODO: noexcept() for copy/move constructor/assignments
 
@@ -585,6 +608,8 @@ namespace kz {
                     construct_error(std::move(rhs.error()));
                 }
             }
+
+            ~expected_storage() = default;
 
             expected_storage& operator=(const expected_storage& rhs) {
                 if (this->_has_value) {
